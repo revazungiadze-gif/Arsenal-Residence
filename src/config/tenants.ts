@@ -60,8 +60,15 @@ const env = (key: string): string => process.env[key] ?? '';
 export const TENANTS: Record<string, Tenant> = {
   arsenal: {
     id: 'arsenal',
-    supabaseUrl: env('EXPO_PUBLIC_ARSENAL_SUPABASE_URL'),
-    supabaseAnonKey: env('EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY'),
+    // Project URL — არსენალის Supabase პროექტი (nulcaugqpzfvletqpiev)
+    supabaseUrl:
+      env('EXPO_PUBLIC_ARSENAL_SUPABASE_URL') ||
+      'https://nulcaugqpzfvletqpiev.supabase.co',
+    // anon public key — საჯარო გასაღები (იგივე, რასაც ვებსაიტი იყენებს).
+    // TODO: ჩასვი აქ anon key Supabase → Project Settings → API-იდან.
+    supabaseAnonKey:
+      env('EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY') ||
+      '', // ⬅️ აქ ჩაჯდება anon key
     branding: {
       displayName: 'Arsenal Residence',
       primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
