@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "სიარემი CRM",
+    "slug": "siaremi-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "siaremi",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.siaremi.mobile"
+    },
+    "android": {
+      "package": "com.siaremi.mobile"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
