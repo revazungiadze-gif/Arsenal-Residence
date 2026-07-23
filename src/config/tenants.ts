@@ -65,10 +65,10 @@ export const TENANTS: Record<string, Tenant> = {
       env('EXPO_PUBLIC_ARSENAL_SUPABASE_URL') ||
       'https://nulcaugqpzfvletqpiev.supabase.co',
     // anon public key — საჯარო გასაღები (იგივე, რასაც ვებსაიტი იყენებს).
-    // TODO: ჩასვი აქ anon key Supabase → Project Settings → API-იდან.
+    // მონაცემებს RLS იცავს, არა ამ გასაღების დამალვა.
     supabaseAnonKey:
       env('EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY') ||
-      '', // ⬅️ აქ ჩაჯდება anon key
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51bGNhdWdxcHpmdmxldHFwaWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MTkzMjUsImV4cCI6MjA4ODE5NTMyNX0.q96zrYj8e9Ro61qGwMJMYR62nffFFw-IcBtUaAV4VH4',
     branding: {
       displayName: 'Arsenal Residence',
       primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
