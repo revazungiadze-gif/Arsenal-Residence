@@ -81,27 +81,34 @@ export async function createBooking(input: {
 
 export async function reviewBooking(
   booking: BookingWithRefs,
-  action: 'approve' | 'reject',
+  action: 'approve' | 'reject' | 'cancel',
   reviewerId: string,
   rejectReason?: string
 ): Promise<Result> {
   if (action === 'reject' && !rejectReason?.trim()) {
     return { error: 'უარყოფის მიზეზი აუცილებელია.' };
   }
+  // ვების წესი: მხოლოდ დამტკიცებული ჯავშანი უქმდება
+  if (action === 'cancel' && booking.status !== 'approved') {
+    return { error: 'მხოლოდ დამტკიცებული ჯავშნის გაუქმება შეიძლება.' };
+  }
 
+  const base = {
+    reviewed_by: reviewerId,
+    reviewed_at: new Date().toISOString(),
+  };
   const patch =
     action === 'approve'
-      ? {
-          status: 'approved',
-          reviewed_by: reviewerId,
-          reviewed_at: new Date().toISOString(),
-        }
-      : {
-          status: 'rejected',
-          reviewed_by: reviewerId,
-          reviewed_at: new Date().toISOString(),
-          reject_reason: rejectReason!.trim().slice(0, 500),
-        };
+      ? { ...base, status: 'approved' }
+      : action === 'reject'
+        ? { ...base, status: 'rejected', reject_reason: rejectReason!.trim().slice(0, 500) }
+        : {
+            ...base,
+            status: 'cancelled',
+            ...(rejectReason?.trim()
+              ? { reject_reason: rejectReason.trim().slice(0, 500) }
+              : {}),
+          };
 
   const { error } = await supabase
     .from('booking_requests')
@@ -116,14 +123,20 @@ export async function reviewBooking(
     .eq('id', booking.apartment_id);
 
   // შეტყობინება მთხოვნელს
+  const code = booking.apartments?.code ?? '';
+  const notif =
+    action === 'approve'
+      ? { title: '✅ ჯავშანი დამტკიცდა', message: `ბინა ${code} დაჯავშნულია`, type: 'success' }
+      : action === 'reject'
+        ? { title: '❌ ჯავშანი უარყოფილია', message: `ბინა ${code} — მიზეზი: ${rejectReason}`, type: 'warning' }
+        : {
+            title: '↩️ ჯავშანი გაუქმდა',
+            message: `ბინა ${code} კვლავ ხელმისაწვდომია${rejectReason?.trim() ? ` — მიზეზი: ${rejectReason}` : ''}`,
+            type: 'warning',
+          };
   await supabase.from('notifications').insert({
     user_id: booking.requested_by,
-    title: action === 'approve' ? '✅ ჯავშანი დამტკიცდა' : '❌ ჯავშანი უარყოფილია',
-    message:
-      action === 'approve'
-        ? `ბინა ${booking.apartments?.code ?? ''} დაჯავშნულია`
-        : `ბინა ${booking.apartments?.code ?? ''} — მიზეზი: ${rejectReason}`,
-    type: action === 'approve' ? 'success' : 'warning',
+    ...notif,
   });
 
   return { error: null };

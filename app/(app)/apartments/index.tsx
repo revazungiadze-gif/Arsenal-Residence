@@ -32,6 +32,8 @@ export default function ApartmentsList() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('all');
   const [bedrooms, setBedrooms] = useState<number>(0);
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,14 +49,18 @@ export default function ApartmentsList() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const min = parseFloat(priceMin) || 0;
+    const max = parseFloat(priceMax) || Infinity;
     return apartments.filter((a) => {
       if (status !== 'all' && a.status !== status) return false;
       if (bedrooms === 3 && (a.bedrooms ?? 0) < 3) return false;
       if (bedrooms > 0 && bedrooms < 3 && a.bedrooms !== bedrooms) return false;
       if (q && !a.code.toLowerCase().includes(q)) return false;
+      if ((min > 0 || max < Infinity) && (a.price == null || a.price < min || a.price > max))
+        return false;
       return true;
     });
-  }, [apartments, query, status, bedrooms]);
+  }, [apartments, query, status, bedrooms, priceMin, priceMax]);
 
   const availableCount = apartments.filter((a) => a.status === 'available').length;
 
@@ -88,6 +94,25 @@ export default function ApartmentsList() {
               onPress={() => setBedrooms(b)}
             />
           ))}
+        </View>
+        <View style={styles.priceRow}>
+          <TextInput
+            style={styles.priceInput}
+            placeholder="ფასი: მინ"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+            value={priceMin}
+            onChangeText={setPriceMin}
+          />
+          <Text style={styles.priceDash}>—</Text>
+          <TextInput
+            style={styles.priceInput}
+            placeholder="მაქს"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+            value={priceMax}
+            onChangeText={setPriceMax}
+          />
         </View>
       </View>
 
@@ -163,6 +188,18 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  priceInput: {
+    flex: 1,
+    height: 38,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: font.size.sm,
+    color: colors.text,
+  },
+  priceDash: { color: colors.textMuted },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: 5,

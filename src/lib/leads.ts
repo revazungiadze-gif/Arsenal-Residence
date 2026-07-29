@@ -40,6 +40,12 @@ export async function addLeadNote(
   return { error: error?.message ?? null };
 }
 
+/** შენიშვნის წაშლა (RLS: მხოლოდ ავტორი ან admin/director) */
+export async function deleteLeadNote(noteId: string): Promise<Result> {
+  const { error } = await supabase.from('lead_notes').delete().eq('id', noteId);
+  return { error: error?.message ?? null };
+}
+
 /** ახალი ლიდის შექმნა */
 export async function createLead(input: {
   full_name: string;

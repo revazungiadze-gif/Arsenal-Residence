@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase';
 import {
   addLeadNote,
   assignLead,
+  deleteLeadNote,
   fetchTeam,
   updateLeadStatus,
 } from '@/lib/leads';
@@ -44,6 +45,7 @@ interface Note {
   id: string;
   content: string | null;
   created_at: string | null;
+  user_id: string | null;
 }
 
 const CAN_ASSIGN = ['admin', 'director', 'sales_manager'];
@@ -72,7 +74,7 @@ export default function LeadDetail() {
       supabase.from('leads').select('*').eq('id', id).single(),
       supabase
         .from('lead_notes')
-        .select('id, content, created_at')
+        .select('id, content, created_at, user_id')
         .eq('lead_id', id)
         .order('created_at', { ascending: false }),
     ]);
@@ -139,6 +141,21 @@ export default function LeadDetail() {
       return;
     }
     load();
+  }
+
+  function onDeleteNote(n: Note) {
+    Alert.alert('შენიშვნის წაშლა', 'დარწმუნებული ხარ?', [
+      { text: 'არა', style: 'cancel' },
+      {
+        text: 'წაშლა',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await deleteLeadNote(n.id);
+          if (error) Alert.alert('შეცდომა', error);
+          else load();
+        },
+      },
+    ]);
   }
 
   function contact(kind: 'tel' | 'sms' | 'wa') {
@@ -294,12 +311,25 @@ export default function LeadDetail() {
           <EmptyState text="შენიშვნები არ არის" />
         ) : (
           <View style={{ gap: spacing.md }}>
-            {notes.map((n) => (
-              <Card key={n.id}>
-                <Text style={styles.body}>{n.content}</Text>
-                <Text style={styles.noteDate}>{fmt(n.created_at)}</Text>
-              </Card>
-            ))}
+            {notes.map((n) => {
+              const canDelete =
+                n.user_id === session?.user.id ||
+                role === 'admin' ||
+                role === 'director';
+              return (
+                <Card key={n.id}>
+                  <View style={styles.noteHead}>
+                    <Text style={[styles.body, { flex: 1 }]}>{n.content}</Text>
+                    {canDelete ? (
+                      <Pressable hitSlop={8} onPress={() => onDeleteNote(n)}>
+                        <Text style={styles.noteDelete}>🗑️</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <Text style={styles.noteDate}>{fmt(n.created_at)}</Text>
+                </Card>
+              );
+            })}
           </View>
         )}
       </View>
@@ -452,6 +482,8 @@ const styles = StyleSheet.create({
   },
   body: { fontSize: font.size.md, color: colors.text, lineHeight: 22 },
   noteDate: { fontSize: font.size.xs, color: colors.textMuted, marginTop: spacing.sm },
+  noteHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  noteDelete: { fontSize: 16, opacity: 0.7 },
   noteInput: {
     minHeight: 70,
     borderWidth: 1,

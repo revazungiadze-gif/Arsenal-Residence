@@ -117,6 +117,28 @@ export default function Bookings() {
     ]);
   }
 
+  async function onCancel(b: BookingWithRefs) {
+    if (!session?.user) return;
+    Alert.alert(
+      'ჯავშნის გაუქმება',
+      `ბინა ${b.apartments?.code ?? ''} კვლავ ხელმისაწვდომი გახდება. გაუქმდეს?`,
+      [
+        { text: 'არა', style: 'cancel' },
+        {
+          text: 'გაუქმება',
+          style: 'destructive',
+          onPress: async () => {
+            setSaving(true);
+            const { error } = await reviewBooking(b, 'cancel', session.user.id);
+            setSaving(false);
+            if (error) Alert.alert('შეცდომა', error);
+            load();
+          },
+        },
+      ]
+    );
+  }
+
   async function onReject() {
     if (!rejecting || !session?.user) return;
     setSaving(true);
@@ -194,6 +216,18 @@ export default function Bookings() {
                   }}
                 >
                   <Text style={styles.actionBtnText}>✕ უარყოფა</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {canReview && item.status === 'approved' ? (
+              <View style={styles.actions}>
+                <Pressable
+                  style={[styles.actionBtn, styles.cancelBtn]}
+                  disabled={saving}
+                  onPress={() => onCancel(item)}
+                >
+                  <Text style={styles.actionBtnText}>↩️ ჯავშნის გაუქმება</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -396,6 +430,7 @@ const styles = StyleSheet.create({
   },
   approveBtn: { backgroundColor: colors.success },
   rejectBtn: { backgroundColor: colors.danger },
+  cancelBtn: { backgroundColor: colors.textMuted },
   actionBtnText: { color: '#fff', fontWeight: font.weight.semibold, fontSize: font.size.sm },
   fab: {
     position: 'absolute',
