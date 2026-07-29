@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Supabase SQL ხიდი — Claude-ს საშუალებას აძლევს SQL გაუშვას ბაზაზე
+# GitHub Actions-ის სერვერიდან (Management API-ით).
+#
+# საჭიროებს ერთ საიდუმლოს: SUPABASE_ACCESS_TOKEN
+#   (repo → Settings → Secrets and variables → Actions → New repository secret)
+# ═══════════════════════════════════════════════════════════════════════
+name: Supabase SQL
+
+on:
+  workflow_dispatch:
+    inputs:
+      sql_file:
+        description: 'გასაშვები SQL ფაილის გზა რეპოში'
+        required: true
+        default: 'supabase/pending.sql'
+
+jobs:
+  run-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run SQL via Supabase Management API
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: nulcaugqpzfvletqpiev
+          SQL_FILE: ${{ github.event.inputs.sql_file }}
+        run: |
+          set -e
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN საიდუმლო არ არის დაყენებული (Settings → Secrets → Actions)"
+            exit 1
+          fi
+          if [ ! -f "$SQL_FILE" ]; then
+            echo "::error::ფაილი ვერ მოიძებნა: $SQL_FILE"
+            exit 1
+          fi
+          echo "▶ ვუშვებ: $SQL_FILE"
+          jq -Rs '{query: .}' < "$SQL_FILE" > /tmp/payload.json
+          HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
+            -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @/tmp/payload.json)
+          echo "HTTP სტატუსი: $HTTP"
+          echo "── შედეგი ──"
+          cat /tmp/resp.json
+          echo ""
+          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
+            echo "::error::SQL შეცდომით დასრულდა (HTTP $HTTP)"
+            exit 1
+          fi
+          echo "✅ წარმატებით შესრულდა"
