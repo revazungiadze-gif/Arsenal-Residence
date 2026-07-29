@@ -44,28 +44,44 @@ export async function markAllRead(): Promise<Result> {
 /**
  * Realtime გამოწერა — ახალი შეტყობინება ბაზაში ჩავარდნისთანავე მოდის.
  * აბრუნებს გაუქმების ფუნქციას (unmount-ზე გამოსაძახებელი).
+ *
+ * ⚠️ არხის სახელი უნიკალურია თითო გამომწერზე — ერთი და იმავე სახელის
+ * არხზე ხელახლა .on() დამატება supabase-ში crash-ს იწვევს (ზარი +
+ * შეტყობინებების ეკრანი ერთდროულად რომ იწერდნენ, ზუსტად ეს ხდებოდა).
+ * try/catch იმისთვისაა, რომ realtime-ის ვერცერთი პრობლემა აპს არ აგდებდეს.
  */
+let channelSeq = 0;
+
 export function subscribeToNotifications(
   userId: string,
   onNew: (n: NotificationRow) => void
 ): () => void {
-  const channel = supabase
-    .channel(`notifications:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${userId}`,
-      },
-      (payload) => onNew(payload.new as NotificationRow)
-    )
-    .subscribe();
+  try {
+    const channel = supabase
+      .channel(`notifications:${userId}:${++channelSeq}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => onNew(payload.new as NotificationRow)
+      )
+      .subscribe();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore
+      }
+    };
+  } catch (e) {
+    console.warn('[notifications] realtime მიუწვდომელია:', e);
+    return () => {};
+  }
 }
 
 /** ტიპის მიხედვით პატარა ვიზუალი */
