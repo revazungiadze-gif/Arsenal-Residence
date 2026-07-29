@@ -97,6 +97,15 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="deals"
+        options={{
+          title: 'გარიგებები',
+          href: null, // „მეტი"-დან იხსნება
+          headerShown: true,
+          headerTitle: '💼 გარიგებები',
+        }}
+      />
+      <Tabs.Screen
         name="ai"
         options={{
           title: 'AI კოპილოტი',

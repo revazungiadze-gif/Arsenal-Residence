@@ -14,9 +14,11 @@ import { useFocusEffect } from 'expo-router';
 import {
   fetchAnalytics,
   fetchBonuses,
+  fetchMarketingStats,
   type AnalyticsData,
   type BonusData,
 } from '@/lib/analytics';
+import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui';
 import {
   LEAD_STATUSES,
@@ -26,17 +28,26 @@ import {
 import { colors, font, radius, spacing } from '@/theme';
 
 export default function Analytics() {
+  const { role } = useAuth();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [bonus, setBonus] = useState<BonusData | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isMarketing = role === 'marketing';
+
   const load = useCallback(async () => {
     setLoading(true);
-    const [a, b] = await Promise.all([fetchAnalytics(), fetchBonuses()]);
-    setData(a);
-    setBonus(b);
+    if (isMarketing) {
+      // marketing ლიდებს პირდაპირ ვერ კითხულობს — აგრეგატები RPC-დან
+      setData(await fetchMarketingStats());
+      setBonus(null);
+    } else {
+      const [a, b] = await Promise.all([fetchAnalytics(), fetchBonuses()]);
+      setData(a);
+      setBonus(b);
+    }
     setLoading(false);
-  }, []);
+  }, [isMarketing]);
 
   useFocusEffect(
     useCallback(() => {
@@ -123,7 +134,8 @@ export default function Analytics() {
         </Section>
       ) : null}
 
-      {/* ბონუსები */}
+      {/* ბონუსები (marketing-ს არ უჩანს) */}
+      {isMarketing ? null : (
       <Section title={`ბონუსები · ${bonus?.monthLabel ?? ''}`}>
         {bonus && bonus.sales.length > 0 ? (
           <>
@@ -149,6 +161,7 @@ export default function Analytics() {
           <Text style={styles.empty}>ამ თვეში დამტკიცებული გაყიდვა ჯერ არ არის</Text>
         )}
       </Section>
+      )}
 
       <Text style={styles.note}>
         ციფრები შენი როლის ხედვის ფარგლებშია — ზუსტად ისე, როგორც ვებში.

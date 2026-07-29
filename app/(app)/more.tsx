@@ -97,11 +97,22 @@ export default function More() {
           label="შეტყობინებები"
           onPress={() => router.push('/(app)/notifications')}
         />
-        {isFeatureEnabled('analytics') && role !== 'marketing' ? (
+        {isFeatureEnabled('analytics') ? (
           <NavRow
             icon="📊"
-            label="ანალიტიკა · მარკეტინგი · ბონუსები"
+            label={
+              role === 'marketing'
+                ? 'მარკეტინგის დეშბორდი'
+                : 'ანალიტიკა · მარკეტინგი · ბონუსები'
+            }
             onPress={() => router.push('/(app)/analytics')}
+          />
+        ) : null}
+        {role !== 'marketing' ? (
+          <NavRow
+            icon="💼"
+            label="გარიგებები (გაყიდვები)"
+            onPress={() => router.push('/(app)/deals')}
           />
         ) : null}
         {isFeatureEnabled('ai_copilot') && role !== 'marketing' ? (
