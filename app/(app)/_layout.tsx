@@ -97,6 +97,15 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="team"
+        options={{
+          title: 'გუნდი',
+          href: null, // „მეტი"-დან იხსნება
+          headerShown: true,
+          headerTitle: 'გუნდი',
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'შეტყობინებები',
