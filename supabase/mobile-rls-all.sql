@@ -66,6 +66,19 @@ create policy mobile_update_bookings on public.booking_requests
   using (public.mobile_get_role() in ('admin','director'))
   with check (public.mobile_get_role() in ('admin','director'));
 
+-- ჯავშნის დამტკიცების თანმხლები: ბინის სტატუსი — მხოლოდ admin/director
+drop policy if exists mobile_update_apartments on public.apartments;
+create policy mobile_update_apartments on public.apartments
+  for update to authenticated
+  using (public.mobile_get_role() in ('admin','director'))
+  with check (public.mobile_get_role() in ('admin','director'));
+
+-- შეტყობინების შექმნა სხვისთვის (ჯავშნის პასუხი) — მენეჯმენტი
+drop policy if exists mobile_insert_notifications on public.notifications;
+create policy mobile_insert_notifications on public.notifications
+  for insert to authenticated
+  with check (public.mobile_get_role() in ('admin','director','sales_manager'));
+
 -- ╔════════════════ ეტაპი 5 — შეტყობინებები ════════════════╗
 -- წაკითხულად მონიშვნა — მხოლოდ საკუთარი.
 
