@@ -55,20 +55,22 @@ export type FeatureKey =
  *   EXPO_PUBLIC_ARSENAL_SUPABASE_URL=https://xxxx.supabase.co
  *   EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY=eyJhbGci...
  */
-const env = (key: string): string => process.env[key] ?? '';
+// ⚠️ Expo env-ცვლადებს მხოლოდ სტატიკურ მიმართვას უსვამს ბანდლში —
+// process.env[dynamicKey] ვერ მუშაობს, ამიტომ ყველა ცვლადი აქ, სახელით:
+const ENV = {
+  TENANT: process.env.EXPO_PUBLIC_TENANT ?? '',
+  ARSENAL_URL: process.env.EXPO_PUBLIC_ARSENAL_SUPABASE_URL ?? '',
+  ARSENAL_KEY: process.env.EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY ?? '',
+};
 
 export const TENANTS: Record<string, Tenant> = {
   arsenal: {
     id: 'arsenal',
     // Project URL — არსენალის Supabase პროექტი (nulcaugqpzfvletqpiev)
-    supabaseUrl:
-      env('EXPO_PUBLIC_ARSENAL_SUPABASE_URL') ||
-      'https://nulcaugqpzfvletqpiev.supabase.co',
-    // anon public key — საჯარო გასაღები (იგივე, რასაც ვებსაიტი იყენებს).
+    supabaseUrl: ENV.ARSENAL_URL || 'https://nulcaugqpzfvletqpiev.supabase.co',
+    // publishable/anon key — საჯარო გასაღები (.env-იდან იკითხება).
     // მონაცემებს RLS იცავს, არა ამ გასაღების დამალვა.
-    supabaseAnonKey:
-      env('EXPO_PUBLIC_ARSENAL_SUPABASE_ANON_KEY') ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51bGNhdWdxcHpmdmxldHFwaWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MTkzMjUsImV4cCI6MjA4ODE5NTMyNX0.q96zrYj8e9Ro61qGwMJMYR62nffFFw-IcBtUaAV4VH4',
+    supabaseAnonKey: ENV.ARSENAL_KEY,
     branding: {
       displayName: 'Arsenal Residence',
       primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
@@ -86,10 +88,11 @@ export const TENANTS: Record<string, Tenant> = {
   },
 
   // ── ახალი კომპანიის დამატება ასე ხდება ──────────────────────────────
+  // (ჯერ ENV ობიექტს დაამატე COMPANYB_URL/COMPANYB_KEY სტატიკური მიმართვით)
   // companyB: {
   //   id: 'companyB',
-  //   supabaseUrl: env('EXPO_PUBLIC_COMPANYB_SUPABASE_URL'),
-  //   supabaseAnonKey: env('EXPO_PUBLIC_COMPANYB_SUPABASE_ANON_KEY'),
+  //   supabaseUrl: ENV.COMPANYB_URL,
+  //   supabaseAnonKey: ENV.COMPANYB_KEY,
   //   branding: { displayName: 'Company B', primaryColor: '#2563EB', darkColor: '#0F172A' },
   //   features: { leads: true, tasks: true, notifications: true },
   // },
@@ -99,7 +102,7 @@ export const TENANTS: Record<string, Tenant> = {
  * აქტიური კომპანია. build-ისას EXPO_PUBLIC_TENANT-ით ირჩევა
  * (მაგ. `EXPO_PUBLIC_TENANT=arsenal`). default — arsenal.
  */
-export const ACTIVE_TENANT_ID = env('EXPO_PUBLIC_TENANT') || 'arsenal';
+export const ACTIVE_TENANT_ID = ENV.TENANT || 'arsenal';
 
 export function getActiveTenant(): Tenant {
   const tenant = TENANTS[ACTIVE_TENANT_ID];
