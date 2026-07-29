@@ -15,6 +15,7 @@ export default function LeadsLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'ლიდები' }} />
       <Stack.Screen name="[id]" options={{ title: 'ლიდი' }} />
+      <Stack.Screen name="new" options={{ title: 'ახალი ლიდი' }} />
     </Stack>
   );
 }

@@ -96,13 +96,20 @@ export default function LeadsList() {
       <FlatList
         data={visible}
         keyExtractor={(l) => l.id}
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+        contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: 90 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={
           !loading ? <EmptyState text="ლიდები არ მოიძებნა" /> : null
         }
         renderItem={({ item }) => <LeadRow lead={item} />}
       />
+
+      {/* ახალი ლიდის ღილაკი */}
+      <Link href="/(app)/leads/new" asChild>
+        <Pressable style={styles.fab}>
+          <Text style={styles.fabText}>＋</Text>
+        </Pressable>
+      </Link>
     </View>
   );
 }
@@ -168,4 +175,21 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: font.size.md, fontWeight: font.weight.semibold, color: colors.text },
   meta: { fontSize: font.size.sm, color: colors.textMuted, marginTop: 2 },
+  fab: {
+    position: 'absolute',
+    right: spacing.xl,
+    bottom: spacing.xl,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  fabText: { color: '#fff', fontSize: 28, lineHeight: 32, fontWeight: font.weight.bold },
 });

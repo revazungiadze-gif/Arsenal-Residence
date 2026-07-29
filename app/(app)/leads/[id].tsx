@@ -1,28 +1,44 @@
 /**
- * app/(app)/leads/[id].tsx — ლიდის დეტალი (read-only).
- * ლიდის ველები + შენიშვნები (lead_notes). ჩაწერა ჯერ არ არის —
- * ის მომდევნო ეტაპზე ჩაირთვება, ბაზის უსაფრთხოების შემოწმების შემდეგ.
+ * app/(app)/leads/[id].tsx — ლიდის დეტალი (ეტაპი 2: ჩაწერაც).
+ * სტატუსის ცვლა (+ დაკარგვის მიზეზი), შენიშვნის დამატება,
+ * დარეკვა/SMS/WhatsApp, მინიჭება (მენეჯმენტს).
  */
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Badge, Card, EmptyState } from '@/components/ui';
 import {
+  addLeadNote,
+  assignLead,
+  fetchTeam,
+  updateLeadStatus,
+} from '@/lib/leads';
+import { useAuth } from '@/context/AuthContext';
+import { Badge, Button, Card, EmptyState } from '@/components/ui';
+import {
+  LEAD_STATUSES,
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
   PRIORITY_LABELS,
+  ROLE_LABELS,
+  dbRoleToAppRole,
   type Lead,
   type LeadStatus,
+  type Profile,
 } from '@/types/crm';
-import { colors, font, spacing } from '@/theme';
+import { colors, font, radius, spacing } from '@/theme';
 
 interface Note {
   id: string;
@@ -30,11 +46,24 @@ interface Note {
   created_at: string | null;
 }
 
+const CAN_ASSIGN = ['admin', 'director', 'sales_manager'];
+
 export default function LeadDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { session, role } = useAuth();
   const [lead, setLead] = useState<Lead | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // შენიშვნის ფორმა
+  const [noteText, setNoteText] = useState('');
+  // დაკარგვის მიზეზის მოდალი
+  const [lossModal, setLossModal] = useState(false);
+  const [lossReason, setLossReason] = useState('');
+  // მინიჭების მოდალი
+  const [assignModal, setAssignModal] = useState(false);
+  const [team, setTeam] = useState<Profile[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -58,6 +87,75 @@ export default function LeadDetail() {
     }, [load])
   );
 
+  async function onStatusTap(status: LeadStatus) {
+    if (!lead || status === lead.status) return;
+    if (status === 'lost') {
+      setLossReason('');
+      setLossModal(true);
+      return;
+    }
+    await applyStatus(status);
+  }
+
+  async function applyStatus(status: LeadStatus, reason?: string) {
+    if (!lead) return;
+    setSaving(true);
+    const { error } = await updateLeadStatus(lead.id, status, reason);
+    setSaving(false);
+    if (error) {
+      Alert.alert('შეცდომა', error);
+      return;
+    }
+    setLossModal(false);
+    load();
+  }
+
+  async function onAddNote() {
+    if (!lead || !session?.user || !noteText.trim()) return;
+    setSaving(true);
+    const { error } = await addLeadNote(lead.id, noteText, session.user.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert('შეცდომა', error);
+      return;
+    }
+    setNoteText('');
+    load();
+  }
+
+  async function openAssign() {
+    setTeam(await fetchTeam());
+    setAssignModal(true);
+  }
+
+  async function onAssign(userId: string | null) {
+    if (!lead) return;
+    setSaving(true);
+    const { error } = await assignLead(lead.id, userId);
+    setSaving(false);
+    setAssignModal(false);
+    if (error) {
+      Alert.alert('შეცდომა', error);
+      return;
+    }
+    load();
+  }
+
+  function contact(kind: 'tel' | 'sms' | 'wa') {
+    const phone = lead?.phone?.replace(/[^\d+]/g, '');
+    if (!phone) {
+      Alert.alert('ტელეფონი არ არის მითითებული');
+      return;
+    }
+    const url =
+      kind === 'tel'
+        ? `tel:${phone}`
+        : kind === 'sms'
+          ? `sms:${phone}`
+          : `https://wa.me/${phone.replace(/^\+/, '')}`;
+    Linking.openURL(url).catch(() => Alert.alert('ვერ გაიხსნა', url));
+  }
+
   if (loading && !lead) {
     return (
       <View style={styles.center}>
@@ -69,13 +167,16 @@ export default function LeadDetail() {
   if (!lead) return <EmptyState text="ლიდი ვერ მოიძებნა" />;
 
   const status = (lead.status as LeadStatus) ?? 'new';
+  const canAssign = role ? CAN_ASSIGN.includes(role) : false;
 
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+      keyboardShouldPersistTaps="handled"
     >
+      {/* სათაური */}
       <View>
         <Text style={styles.name}>{lead.full_name}</Text>
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
@@ -92,6 +193,46 @@ export default function LeadDetail() {
         </View>
       </View>
 
+      {/* კონტაქტის ღილაკები */}
+      <View style={styles.contactRow}>
+        <ContactBtn label="📞 დარეკვა" onPress={() => contact('tel')} />
+        <ContactBtn label="✉️ SMS" onPress={() => contact('sms')} />
+        <ContactBtn label="💬 WhatsApp" onPress={() => contact('wa')} />
+      </View>
+
+      {/* სტატუსის შეცვლა */}
+      <View>
+        <Text style={styles.sectionTitle}>სტატუსი</Text>
+        <View style={styles.statusWrap}>
+          {LEAD_STATUSES.map((s) => {
+            const active = s === status;
+            const c = LEAD_STATUS_COLORS[s];
+            return (
+              <Pressable
+                key={s}
+                disabled={saving}
+                onPress={() => onStatusTap(s)}
+                style={[
+                  styles.statusChip,
+                  { borderColor: c },
+                  active && { backgroundColor: c },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusChipText,
+                    { color: active ? '#fff' : c },
+                  ]}
+                >
+                  {LEAD_STATUS_LABELS[s]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* ძირითადი ველები */}
       <Card>
         <Field label="ტელეფონი" value={lead.phone} />
         <Field label="ელფოსტა" value={lead.email} />
@@ -106,8 +247,20 @@ export default function LeadDetail() {
         />
         <Field label="ბინის კოდი" value={lead.apartment_code} />
         <Field label="შეხვედრა" value={fmt(lead.meeting_date)} />
+        {status === 'lost' ? (
+          <Field label="დაკარგვის მიზეზი" value={lead.loss_reason} />
+        ) : null}
         <Field label="შექმნილია" value={fmt(lead.created_at)} last />
       </Card>
+
+      {/* მინიჭება (მხოლოდ მენეჯმენტი) */}
+      {canAssign ? (
+        <Button
+          title="👤 მინიჭება თანამშრომელზე"
+          variant="outline"
+          onPress={openAssign}
+        />
+      ) : null}
 
       {lead.notes ? (
         <Card>
@@ -116,8 +269,27 @@ export default function LeadDetail() {
         </Card>
       ) : null}
 
+      {/* შენიშვნები */}
       <View>
         <Text style={styles.sectionTitle}>შენიშვნები ({notes.length})</Text>
+
+        <Card style={{ marginBottom: spacing.md }}>
+          <TextInput
+            style={styles.noteInput}
+            placeholder="ახალი შენიშვნა..."
+            placeholderTextColor={colors.textMuted}
+            value={noteText}
+            onChangeText={setNoteText}
+            multiline
+          />
+          <Button
+            title="დამატება"
+            onPress={onAddNote}
+            loading={saving}
+            disabled={!noteText.trim()}
+          />
+        </Card>
+
         {notes.length === 0 ? (
           <EmptyState text="შენიშვნები არ არის" />
         ) : (
@@ -131,7 +303,78 @@ export default function LeadDetail() {
           </View>
         )}
       </View>
+
+      {/* ── მოდალი: დაკარგვის მიზეზი ── */}
+      <Modal visible={lossModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>რატომ დაიკარგა ლიდი?</Text>
+            <TextInput
+              style={styles.noteInput}
+              placeholder="მიზეზი (ფასი, კონკურენტი, ლოკაცია...)"
+              placeholderTextColor={colors.textMuted}
+              value={lossReason}
+              onChangeText={setLossReason}
+              multiline
+              autoFocus
+            />
+            <View style={{ gap: spacing.sm }}>
+              <Button
+                title="დადასტურება"
+                onPress={() => applyStatus('lost', lossReason)}
+                loading={saving}
+              />
+              <Button
+                title="გაუქმება"
+                variant="outline"
+                onPress={() => setLossModal(false)}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── მოდალი: მინიჭება ── */}
+      <Modal visible={assignModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>ვის მიენიჭოს ლიდი?</Text>
+            <ScrollView style={{ maxHeight: 360 }}>
+              {team.map((p) => (
+                <Pressable
+                  key={p.id}
+                  onPress={() => onAssign(p.id)}
+                  style={[
+                    styles.teamRow,
+                    lead.assigned_to === p.id && styles.teamRowActive,
+                  ]}
+                >
+                  <Text style={styles.body}>
+                    {p.full_name || p.id.slice(0, 8)}
+                  </Text>
+                  <Text style={styles.teamRole}>
+                    {ROLE_LABELS[dbRoleToAppRole(p.role)]}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Button
+              title="გაუქმება"
+              variant="outline"
+              onPress={() => setAssignModal(false)}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
+  );
+}
+
+function ContactBtn({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.contactBtn}>
+      <Text style={styles.contactBtnText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -169,6 +412,26 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   name: { fontSize: font.size.xl, fontWeight: font.weight.bold, color: colors.text },
+  contactRow: { flexDirection: 'row', gap: spacing.sm },
+  contactBtn: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  contactBtnText: { fontSize: font.size.sm, fontWeight: font.weight.semibold, color: colors.text },
+  statusWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statusChip: {
+    borderWidth: 1.5,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    backgroundColor: colors.card,
+  },
+  statusChipText: { fontSize: font.size.sm, fontWeight: font.weight.semibold },
   field: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.md },
   fieldBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
   fieldLabel: { fontSize: font.size.sm, color: colors.textMuted },
@@ -180,11 +443,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginLeft: spacing.md,
   },
-  sectionLabel: {
-    fontSize: font.size.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.sm,
-  },
+  sectionLabel: { fontSize: font.size.sm, color: colors.textMuted, marginBottom: spacing.sm },
   sectionTitle: {
     fontSize: font.size.lg,
     fontWeight: font.weight.semibold,
@@ -193,4 +452,43 @@ const styles = StyleSheet.create({
   },
   body: { fontSize: font.size.md, color: colors.text, lineHeight: 22 },
   noteDate: { fontSize: font.size.xs, color: colors.textMuted, marginTop: spacing.sm },
+  noteInput: {
+    minHeight: 70,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: font.size.md,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlignVertical: 'top',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  modalCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  modalTitle: {
+    fontSize: font.size.lg,
+    fontWeight: font.weight.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  teamRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  teamRowActive: { backgroundColor: colors.primary + '15' },
+  teamRole: { fontSize: font.size.xs, color: colors.textMuted },
 });
