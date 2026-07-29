@@ -37,6 +37,7 @@ export default function AppLayout() {
         headerTitleStyle: { fontWeight: font.weight.semibold },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: { fontSize: 10 },
       }}
     >
       <Tabs.Screen
@@ -75,6 +76,24 @@ export default function AppLayout() {
           headerShown: true,
           headerTitle: 'ჯავშნები',
           tabBarIcon: ({ focused }) => <TabIcon label="🔖" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="apartments"
+        options={{
+          title: 'ბინები',
+          headerShown: false, // საკუთარი Stack-ჰედერი აქვს
+          tabBarIcon: ({ focused }) => <TabIcon label="🏢" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: 'ანალიტიკა',
+          // ტაბ-ბარში არ ჩანს — „მეტი"-დან იხსნება
+          href: null,
+          headerShown: true,
+          headerTitle: 'ანალიტიკა',
         }}
       />
       <Tabs.Screen
