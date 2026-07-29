@@ -66,9 +66,16 @@ export default function Deals() {
                   : '—'}
               </Text>
             </View>
-            <Text style={styles.meta}>👤 კლიენტი: {item.leadName}</Text>
-            <Text style={styles.meta}>🤝 აგენტი: {item.agentName}</Text>
-            <Text style={styles.date}>{fmt(item.reviewedAt)}</Text>
+            {item.leadName ? (
+              <Text style={styles.meta}>👤 კლიენტი: {item.leadName}</Text>
+            ) : null}
+            {item.agentName ? (
+              <Text style={styles.meta}>🤝 აგენტი: {item.agentName}</Text>
+            ) : null}
+            {item.source === 'sold' ? (
+              <Text style={styles.meta}>🏷️ გაყიდულია (ვების ადმინკიდან)</Text>
+            ) : null}
+            <Text style={styles.date}>{fmt(item.date)}</Text>
           </Card>
         )}
       />
