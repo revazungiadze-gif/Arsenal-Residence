@@ -50,7 +50,19 @@ export default function AppLayout() {
         options={{
           title: 'ლიდები',
           href: isFeatureEnabled('leads') ? undefined : null,
+          // leads-ს საკუთარი Stack-ჰედერი აქვს — Tabs-ისას ვმალავთ (ორმაგი ჰედერი)
+          headerShown: false,
           tabBarIcon: ({ focused }) => <TabIcon label="👥" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: 'დავალებები',
+          href: isFeatureEnabled('tasks') ? undefined : null,
+          headerShown: true,
+          headerTitle: 'დავალებები',
+          tabBarIcon: ({ focused }) => <TabIcon label="📋" focused={focused} />,
         }}
       />
       <Tabs.Screen
