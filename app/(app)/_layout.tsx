@@ -66,6 +66,16 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="bookings"
+        options={{
+          title: 'ჯავშნები',
+          href: isFeatureEnabled('bookings') ? undefined : null,
+          headerShown: true,
+          headerTitle: 'ჯავშნები',
+          tabBarIcon: ({ focused }) => <TabIcon label="🔖" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'მეტი',
