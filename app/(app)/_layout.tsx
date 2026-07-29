@@ -6,6 +6,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { isFeatureEnabled } from '@/config/tenants';
+import { NotificationBell } from '@/components/NotificationBell';
 import { colors, font } from '@/theme';
 
 /** მარტივი ტექსტური ტაბ-იконა (გარე icon-პაკეტის გარეშე) */
@@ -42,6 +43,7 @@ export default function AppLayout() {
         name="dashboard"
         options={{
           title: 'მთავარი',
+          headerRight: () => <NotificationBell />,
           tabBarIcon: ({ focused }) => <TabIcon label="📊" focused={focused} />,
         }}
       />
@@ -73,6 +75,16 @@ export default function AppLayout() {
           headerShown: true,
           headerTitle: 'ჯავშნები',
           tabBarIcon: ({ focused }) => <TabIcon label="🔖" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'შეტყობინებები',
+          // ტაბ-ბარში არ ჩანს — ზარიდან (🔔) იხსნება
+          href: null,
+          headerShown: true,
+          headerTitle: 'შეტყობინებები',
         }}
       />
       <Tabs.Screen
