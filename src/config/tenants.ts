@@ -68,9 +68,10 @@ export const TENANTS: Record<string, Tenant> = {
     id: 'arsenal',
     // Project URL — არსენალის Supabase პროექტი (nulcaugqpzfvletqpiev)
     supabaseUrl: ENV.ARSENAL_URL || 'https://nulcaugqpzfvletqpiev.supabase.co',
-    // publishable/anon key — საჯარო გასაღები (.env-იდან იკითხება).
-    // მონაცემებს RLS იცავს, არა ამ გასაღების დამალვა.
-    supabaseAnonKey: ENV.ARSENAL_KEY,
+    // publishable key — საჯარო გასაღები (RLS იცავს მონაცემებს, არა ეს).
+    // .env-ით override შესაძლებელია, მაგრამ default-ად კოდშივეა.
+    supabaseAnonKey:
+      ENV.ARSENAL_KEY || 'sb_publishable__NGjpB8oY3tn0YKb36ODAA_eZG53Kvq',
     branding: {
       displayName: 'Arsenal Residence',
       primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
