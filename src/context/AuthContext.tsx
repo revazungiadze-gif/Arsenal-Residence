@@ -71,13 +71,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    // ვებ-CRM-ის მსგავსად — ზოგადი შეტყობინება (user enumeration-ის თავიდან ასაცილებლად)
-    if (error) return { error: 'ელფოსტა ან პაროლი არასწორია.' };
-    return { error: null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        // რეალური მიზეზის ჩვენება — რომ ქსელის პრობლემა credentials-ის
+        // შეცდომაში არ აგვერიოს
+        const msg = error.message || '';
+        if (msg.includes('Invalid login credentials')) {
+          return { error: 'ელფოსტა ან პაროლი არასწორია.' };
+        }
+        if (msg.includes('Email not confirmed')) {
+          return { error: 'ელფოსტა დაუდასტურებელია (Supabase → Auth → Users).' };
+        }
+        if (msg.toLowerCase().includes('disabled')) {
+          return { error: 'Email-ით შესვლა გამორთულია Supabase-ში: ' + msg };
+        }
+        return { error: 'Auth შეცდომა: ' + msg };
+      }
+      return { error: null };
+    } catch (e) {
+      // fetch-ის ჩავარდნა = ქსელის პრობლემა, არა არასწორი პაროლი
+      return {
+        error:
+          'ქსელის შეცდომა — Supabase-მდე ვერ მივიდა მოთხოვნა: ' +
+          (e instanceof Error ? e.message : String(e)),
+      };
+    }
   }
 
   async function signOut() {
