@@ -22,10 +22,6 @@ import { colors, font, radius, spacing } from '@/theme';
 
 const MGMT = ['admin', 'director', 'sales_manager'];
 
-const FUTURE_SECTIONS: { key: Parameters<typeof isFeatureEnabled>[0]; label: string }[] = [
-  { key: 'ai_copilot', label: 'AI კოპილოტი' },
-];
-
 export default function More() {
   const { profile, role, session, signOut } = useAuth();
   const tenant = getActiveTenant();
@@ -108,6 +104,13 @@ export default function More() {
             onPress={() => router.push('/(app)/analytics')}
           />
         ) : null}
+        {isFeatureEnabled('ai_copilot') && role !== 'marketing' ? (
+          <NavRow
+            icon="🤖"
+            label="AI კოპილოტი — ვისზე ვიმუშაო დღეს?"
+            onPress={() => router.push('/(app)/ai')}
+          />
+        ) : null}
         {role && MGMT.includes(role) ? (
           <NavRow
             icon="👥"
@@ -125,18 +128,6 @@ export default function More() {
             setPassModal(true);
           }}
         />
-      </Card>
-
-      <Card>
-        <Text style={styles.sectionTitle}>მალე დაემატება</Text>
-        {FUTURE_SECTIONS.map((s) => (
-          <View key={s.key} style={styles.futureRow}>
-            <Text style={styles.body}>{s.label}</Text>
-            <Text style={[styles.pill, isFeatureEnabled(s.key) ? styles.pillOn : styles.pillOff]}>
-              {isFeatureEnabled(s.key) ? 'ჩართული' : 'გამორთული'}
-            </Text>
-          </View>
-        ))}
       </Card>
 
       <Button title="გასვლა" variant="outline" onPress={signOut} />

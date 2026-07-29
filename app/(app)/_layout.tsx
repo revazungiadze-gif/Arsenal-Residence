@@ -97,6 +97,15 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai"
+        options={{
+          title: 'AI კოპილოტი',
+          href: null, // „მეტი"-დან იხსნება
+          headerShown: true,
+          headerTitle: '🤖 AI კოპილოტი',
+        }}
+      />
+      <Tabs.Screen
         name="team"
         options={{
           title: 'გუნდი',
