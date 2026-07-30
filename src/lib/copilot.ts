@@ -106,13 +106,18 @@ export function buildFollowUp(lead: Lead): string {
 
 /** აქტიური ლიდები პრიორიტეტის კლებადობით */
 export async function fetchCopilotLeads(limit = 20): Promise<CopilotLead[]> {
-  const { data } = await supabase
+  // იგივე მოთხოვნა, რასაც ლიდების სია იყენებს; won/lost ფილტრი კლიენტზე —
+  // .not(...,'in',...) სინტაქსი ზოგ გარემოში ცარიელს აბრუნებდა
+  const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .not('status', 'in', '(won,lost)')
+    .order('created_at', { ascending: false })
     .limit(500);
+  if (error) console.warn('[copilot] query error:', error.message);
 
-  const leads = (data ?? []) as Lead[];
+  const leads = ((data ?? []) as Lead[]).filter(
+    (l) => l.status !== 'won' && l.status !== 'lost'
+  );
   return leads
     .map((lead) => {
       const score = analyzeLeadPriority(lead);

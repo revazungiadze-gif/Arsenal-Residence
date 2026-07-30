@@ -53,10 +53,9 @@ export async function fetchActiveLeads(): Promise<Lead[]> {
   const { data } = await supabase
     .from('leads')
     .select('*')
-    .not('status', 'in', '(won,lost)')
     .order('created_at', { ascending: false })
-    .limit(200);
-  return data ?? [];
+    .limit(300);
+  return (data ?? []).filter((l) => l.status !== 'won' && l.status !== 'lost');
 }
 
 export const APT_STATUS_LABELS: Record<string, string> = {
