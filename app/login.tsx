@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Redirect } from 'expo-router';
+import Constants from 'expo-constants';
 import { useAuth } from '@/context/AuthContext';
 import { getActiveTenant } from '@/config/tenants';
 import { Button } from '@/components/ui';
@@ -91,7 +92,10 @@ export default function Login() {
         <Button title="შესვლა" onPress={onSubmit} loading={loading} />
       </View>
 
-      <Text style={styles.footer}>{tenant.branding.displayName} · მობილური CRM</Text>
+      <Text style={styles.footer}>
+        {tenant.branding.displayName} · მობილური CRM · v
+        {Constants.expoConfig?.version ?? '?'}
+      </Text>
     </KeyboardAvoidingView>
   );
 }

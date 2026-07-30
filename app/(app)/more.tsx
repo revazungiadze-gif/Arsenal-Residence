@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import { useAuth } from '@/context/AuthContext';
 import { getActiveTenant, isFeatureEnabled } from '@/config/tenants';
 import { changePassword, updateMyProfile } from '@/lib/team';
@@ -142,7 +143,9 @@ export default function More() {
       </Card>
 
       <Button title="გასვლა" variant="outline" onPress={signOut} />
-      <Text style={styles.version}>სიარემი მობილური · v0.1.0</Text>
+      <Text style={styles.version}>
+        სიარემი მობილური · v{Constants.expoConfig?.version ?? '?'}
+      </Text>
 
       {/* ── მოდალი: პროფილის რედაქტირება ── */}
       <Modal visible={editModal} transparent animationType="fade">
