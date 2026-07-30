@@ -33,6 +33,7 @@ export default function Dashboard() {
   const { profile, role } = useAuth();
   const [counts, setCounts] = useState<Counts>(emptyCounts());
   const [total, setTotal] = useState(0);
+  const [apt, setApt] = useState({ available: 0, reserved: 0, sold: 0 });
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -40,18 +41,27 @@ export default function Dashboard() {
     // თითო სტატუსზე count(head) — მსუბუქი მოთხოვნა (მონაცემებს არ ეწევა)
     const next = emptyCounts();
     let sum = 0;
-    await Promise.all(
-      LEAD_STATUSES.map(async (status) => {
+    const aptNext = { available: 0, reserved: 0, sold: 0 };
+    await Promise.all([
+      ...LEAD_STATUSES.map(async (status) => {
         const { count } = await supabase
           .from('leads')
           .select('*', { count: 'exact', head: true })
           .eq('status', status);
         next[status] = count ?? 0;
         sum += count ?? 0;
-      })
-    );
+      }),
+      ...(['available', 'reserved', 'sold'] as const).map(async (s) => {
+        const { count } = await supabase
+          .from('apartments')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', s);
+        aptNext[s] = count ?? 0;
+      }),
+    ]);
     setCounts(next);
     setTotal(sum);
+    setApt(aptNext);
     setLoading(false);
   }, []);
 
@@ -79,6 +89,14 @@ export default function Dashboard() {
         <KpiTile label="სულ ლიდი" value={total} accent={colors.primary} />
         <KpiTile label="აქტიური" value={activeLeads} accent={colors.warning} />
         <KpiTile label="მოგებული" value={counts.won} accent={colors.success} />
+      </View>
+
+      {/* ინვენტარის მდგომარეობა */}
+      <Text style={styles.sectionTitle}>ბინების ინვენტარი</Text>
+      <View style={styles.kpiRow}>
+        <KpiTile label="თავისუფალი" value={apt.available} accent={colors.success} />
+        <KpiTile label="დაჯავშნული" value={apt.reserved} accent={colors.warning} />
+        <KpiTile label="გაყიდული" value={apt.sold} accent={colors.danger} />
       </View>
 
       {/* pipeline სტატუსების ჭრილში */}

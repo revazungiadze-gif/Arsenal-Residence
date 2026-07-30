@@ -23,9 +23,14 @@ import {
   addLeadNote,
   assignLead,
   deleteLeadNote,
+  fetchLeadInterests,
   fetchTeam,
+  removeLeadInterest,
+  updateLeadFields,
   updateLeadStatus,
+  type LeadInterest,
 } from '@/lib/leads';
+import { addLeadInterest, fetchApartments, type ApartmentWithRefs } from '@/lib/apartments';
 import { useAuth } from '@/context/AuthContext';
 import { Badge, Button, Card, EmptyState } from '@/components/ui';
 import {
@@ -66,20 +71,35 @@ export default function LeadDetail() {
   // მინიჭების მოდალი
   const [assignModal, setAssignModal] = useState(false);
   const [team, setTeam] = useState<Profile[]>([]);
+  // ინტერესები + ბინის მიბმის მოდალი
+  const [interests, setInterests] = useState<LeadInterest[]>([]);
+  const [aptModal, setAptModal] = useState(false);
+  const [apartments, setApartments] = useState<ApartmentWithRefs[]>([]);
+  // რედაქტირების მოდალი
+  const [editModal, setEditModal] = useState(false);
+  const [eName, setEName] = useState('');
+  const [ePhone, setEPhone] = useState('');
+  const [eEmail, setEEmail] = useState('');
+  const [eSource, setESource] = useState('');
+  const [eBudgetMin, setEBudgetMin] = useState('');
+  const [eBudgetMax, setEBudgetMax] = useState('');
+  const [eNotes, setENotes] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const [{ data: leadData }, { data: noteData }] = await Promise.all([
+    const [{ data: leadData }, { data: noteData }, interestData] = await Promise.all([
       supabase.from('leads').select('*').eq('id', id).single(),
       supabase
         .from('lead_notes')
         .select('id, content, created_at, user_id')
         .eq('lead_id', id)
         .order('created_at', { ascending: false }),
+      fetchLeadInterests(id),
     ]);
     setLead(leadData ?? null);
     setNotes((noteData as Note[]) ?? []);
+    setInterests(interestData);
     setLoading(false);
   }, [id]);
 
@@ -141,6 +161,79 @@ export default function LeadDetail() {
       return;
     }
     load();
+  }
+
+  function openEdit() {
+    if (!lead) return;
+    setEName(lead.full_name ?? '');
+    setEPhone(lead.phone ?? '');
+    setEEmail(lead.email ?? '');
+    setESource(lead.source ?? '');
+    setEBudgetMin(lead.budget_min != null ? String(lead.budget_min) : '');
+    setEBudgetMax(lead.budget_max != null ? String(lead.budget_max) : '');
+    setENotes(lead.notes ?? '');
+    setEditModal(true);
+  }
+
+  async function onSaveEdit() {
+    if (!lead) return;
+    const isMgmt = role ? CAN_ASSIGN.includes(role) : false;
+    setSaving(true);
+    const { error } = await updateLeadFields(lead.id, {
+      // agent-ის ველები (ვების AGENT_FIELDS-ის სარკე)
+      budget_min: eBudgetMin.trim() ? parseFloat(eBudgetMin) || null : null,
+      budget_max: eBudgetMax.trim() ? parseFloat(eBudgetMax) || null : null,
+      notes: eNotes.trim() || null,
+      // მენეჯმენტის დამატებითი ველები (MANAGER_FIELDS)
+      ...(isMgmt
+        ? {
+            full_name: eName.trim() || lead.full_name,
+            phone: ePhone.trim() || null,
+            email: eEmail.trim() || null,
+            source: eSource.trim() || null,
+          }
+        : {}),
+    });
+    setSaving(false);
+    if (error) {
+      Alert.alert('შეცდომა', error);
+      return;
+    }
+    setEditModal(false);
+    load();
+  }
+
+  async function openAptPicker() {
+    setApartments(await fetchApartments());
+    setAptModal(true);
+  }
+
+  async function onLinkApartment(apt: ApartmentWithRefs) {
+    if (!lead) return;
+    setSaving(true);
+    const { error } = await addLeadInterest(lead.id, apt);
+    setSaving(false);
+    setAptModal(false);
+    if (error) {
+      Alert.alert('შეცდომა', error);
+      return;
+    }
+    load();
+  }
+
+  function onRemoveInterest(it: LeadInterest) {
+    Alert.alert('ინტერესის მოხსნა', `${it.apartment_code ?? 'ბინა'} — მოიხსნას?`, [
+      { text: 'არა', style: 'cancel' },
+      {
+        text: 'მოხსნა',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await removeLeadInterest(it.id);
+          if (error) Alert.alert('შეცდომა', error);
+          else load();
+        },
+      },
+    ]);
   }
 
   function onDeleteNote(n: Note) {
@@ -216,6 +309,7 @@ export default function LeadDetail() {
         <ContactBtn label="✉️ SMS" onPress={() => contact('sms')} />
         <ContactBtn label="💬 WhatsApp" onPress={() => contact('wa')} />
       </View>
+      <Button title="✏️ ლიდის რედაქტირება" variant="outline" onPress={openEdit} />
 
       {/* სტატუსის შეცვლა */}
       <View>
@@ -285,6 +379,32 @@ export default function LeadDetail() {
           <Text style={styles.body}>{lead.notes}</Text>
         </Card>
       ) : null}
+
+      {/* დაინტერესებული ბინები */}
+      <View>
+        <Text style={styles.sectionTitle}>
+          🏢 დაინტერესებული ბინები ({interests.length})
+        </Text>
+        <Card>
+          <View style={styles.interestWrap}>
+            {interests.map((it) => (
+              <Pressable
+                key={it.id}
+                onLongPress={() => onRemoveInterest(it)}
+                style={styles.interestChip}
+              >
+                <Text style={styles.interestText}>{it.apartment_code ?? '—'}</Text>
+                <Text style={styles.interestX} onPress={() => onRemoveInterest(it)}>
+                  {' '}✕
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.interestAdd} onPress={openAptPicker}>
+              <Text style={styles.interestAddText}>＋ ბინის მიბმა</Text>
+            </Pressable>
+          </View>
+        </Card>
+      </View>
 
       {/* შენიშვნები */}
       <View>
@@ -360,6 +480,120 @@ export default function LeadDetail() {
                 onPress={() => setLossModal(false)}
               />
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── მოდალი: ლიდის რედაქტირება ── */}
+      <Modal visible={editModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text style={styles.modalTitle}>ლიდის რედაქტირება</Text>
+
+              {role && CAN_ASSIGN.includes(role) ? (
+                <>
+                  <TextInput
+                    style={styles.noteInput}
+                    value={eName}
+                    onChangeText={setEName}
+                    placeholder="სახელი და გვარი"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <TextInput
+                    style={styles.noteInput}
+                    value={ePhone}
+                    onChangeText={setEPhone}
+                    placeholder="ტელეფონი"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="phone-pad"
+                  />
+                  <TextInput
+                    style={styles.noteInput}
+                    value={eEmail}
+                    onChangeText={setEEmail}
+                    placeholder="ელფოსტა"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  <TextInput
+                    style={styles.noteInput}
+                    value={eSource}
+                    onChangeText={setESource}
+                    placeholder="წყარო"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </>
+              ) : (
+                <Text style={styles.sectionLabel}>
+                  (სახელს/კონტაქტს მხოლოდ მენეჯმენტი ცვლის — შენ შეგიძლია
+                  ბიუჯეტი და შენიშვნა)
+                </Text>
+              )}
+
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TextInput
+                  style={[styles.noteInput, { flex: 1 }]}
+                  value={eBudgetMin}
+                  onChangeText={setEBudgetMin}
+                  placeholder="ბიუჯეტი: მინ"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={[styles.noteInput, { flex: 1 }]}
+                  value={eBudgetMax}
+                  onChangeText={setEBudgetMax}
+                  placeholder="მაქს"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <TextInput
+                style={styles.noteInput}
+                value={eNotes}
+                onChangeText={setENotes}
+                placeholder="ზოგადი შენიშვნა"
+                placeholderTextColor={colors.textMuted}
+                multiline
+              />
+
+              <View style={{ gap: spacing.sm }}>
+                <Button title="შენახვა" onPress={onSaveEdit} loading={saving} />
+                <Button
+                  title="გაუქმება"
+                  variant="outline"
+                  onPress={() => setEditModal(false)}
+                />
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── მოდალი: ბინის მიბმა ── */}
+      <Modal visible={aptModal} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>რომელი ბინა აინტერესებს?</Text>
+            <ScrollView style={{ maxHeight: 380 }}>
+              {apartments.map((a) => (
+                <Pressable
+                  key={a.id}
+                  onPress={() => onLinkApartment(a)}
+                  style={styles.teamRow}
+                >
+                  <Text style={styles.body}>🏢 {a.code}</Text>
+                  <Text style={styles.teamRole}>
+                    {a.price ? `${a.price.toLocaleString('ka-GE')} ${a.currency ?? ''}` : ''}
+                    {a.status === 'available' ? ' · თავისუფალი' : a.status === 'reserved' ? ' · დაჯავშნული' : ' · გაყიდული'}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Button title="გაუქმება" variant="outline" onPress={() => setAptModal(false)} />
           </View>
         </View>
       </Modal>
@@ -484,6 +718,28 @@ const styles = StyleSheet.create({
   noteDate: { fontSize: font.size.xs, color: colors.textMuted, marginTop: spacing.sm },
   noteHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   noteDelete: { fontSize: 16, opacity: 0.7 },
+  interestWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  interestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    backgroundColor: colors.primary + '10',
+  },
+  interestText: { fontSize: font.size.sm, color: colors.primary, fontWeight: font.weight.semibold },
+  interestX: { fontSize: font.size.sm, color: colors.danger },
+  interestAdd: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.textMuted,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  interestAddText: { fontSize: font.size.sm, color: colors.textMuted },
   noteInput: {
     minHeight: 70,
     borderWidth: 1,

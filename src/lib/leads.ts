@@ -40,6 +40,52 @@ export async function addLeadNote(
   return { error: error?.message ?? null };
 }
 
+/**
+ * ლიდის ველების რედაქტირება — ვების allowlist-ის სარკე:
+ * agent: budget_min/max, notes; მენეჯმენტი: + full_name, phone, email, source.
+ * (RLS დამატებით იცავს ბაზის დონეზე.)
+ */
+export async function updateLeadFields(
+  id: string,
+  patch: Partial<
+    Pick<
+      Lead,
+      'full_name' | 'phone' | 'email' | 'source' | 'budget_min' | 'budget_max' | 'notes'
+    >
+  >
+): Promise<Result> {
+  const { error } = await supabase
+    .from('leads')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
+// ── ბინის ინტერესები (lead_apartment_interests) ─────────────────────────
+
+export interface LeadInterest {
+  id: string;
+  apartment_id: string | null;
+  apartment_code: string | null;
+}
+
+export async function fetchLeadInterests(leadId: string): Promise<LeadInterest[]> {
+  const { data } = await supabase
+    .from('lead_apartment_interests')
+    .select('id, apartment_id, apartment_code')
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: false });
+  return (data as LeadInterest[]) ?? [];
+}
+
+export async function removeLeadInterest(interestId: string): Promise<Result> {
+  const { error } = await supabase
+    .from('lead_apartment_interests')
+    .delete()
+    .eq('id', interestId);
+  return { error: error?.message ?? null };
+}
+
 /** შენიშვნის წაშლა (RLS: მხოლოდ ავტორი ან admin/director) */
 export async function deleteLeadNote(noteId: string): Promise<Result> {
   const { error } = await supabase.from('lead_notes').delete().eq('id', noteId);

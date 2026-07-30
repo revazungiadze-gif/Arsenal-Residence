@@ -60,6 +60,27 @@ export default function ApartmentDetail() {
     }, [load])
   );
 
+  function onChangeStatus(next: 'available' | 'reserved' | 'sold') {
+    if (!apt) return;
+    const labels = { available: 'თავისუფალი', reserved: 'დაჯავშნული', sold: 'გაყიდული' };
+    Alert.alert('სტატუსის შეცვლა', `${apt.code} → ${labels[next]}?`, [
+      { text: 'გაუქმება', style: 'cancel' },
+      {
+        text: 'შეცვლა',
+        onPress: async () => {
+          setSaving(true);
+          const { error } = await supabase
+            .from('apartments')
+            .update({ status: next, updated_at: new Date().toISOString() })
+            .eq('id', apt.id);
+          setSaving(false);
+          if (error) Alert.alert('შეცდომა', error.message);
+          load();
+        },
+      },
+    ]);
+  }
+
   async function openLeadPicker() {
     setLeads(await fetchActiveLeads());
     setLeadModal(true);
@@ -137,6 +158,35 @@ export default function ApartmentDetail() {
         <Button title="👤 ლიდის ინტერესის მიბმა" onPress={openLeadPicker} loading={saving} />
       ) : null}
 
+      {/* სტატუსის შეცვლა — მხოლოდ admin/director (გაყიდვის დაფიქსირება) */}
+      {role === 'admin' || role === 'director' ? (
+        <Card>
+          <Text style={styles.sectionLabel}>სტატუსის შეცვლა</Text>
+          <View style={styles.statusRow}>
+            {(['available', 'reserved', 'sold'] as const).map((s) => {
+              const active = status === s;
+              const c = APT_STATUS_COLORS[s];
+              return (
+                <Pressable
+                  key={s}
+                  disabled={saving || active}
+                  onPress={() => onChangeStatus(s)}
+                  style={[
+                    styles.statusChip,
+                    { borderColor: c },
+                    active && { backgroundColor: c },
+                  ]}
+                >
+                  <Text style={[styles.statusChipText, { color: active ? '#fff' : c }]}>
+                    {APT_STATUS_LABELS[s]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
+
       {/* ── მოდალი: ლიდის არჩევა ── */}
       <Modal visible={leadModal} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
@@ -183,6 +233,17 @@ function Field({
 }
 
 const styles = StyleSheet.create({
+  sectionLabel: { fontSize: font.size.sm, color: colors.textMuted, marginBottom: spacing.sm },
+  statusRow: { flexDirection: 'row', gap: spacing.sm },
+  statusChip: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    backgroundColor: colors.card,
+  },
+  statusChipText: { fontSize: font.size.sm, fontWeight: font.weight.semibold },
   screen: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
