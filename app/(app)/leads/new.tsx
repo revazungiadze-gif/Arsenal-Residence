@@ -18,9 +18,11 @@ import { router } from 'expo-router';
 import { createLead } from '@/lib/leads';
 import { useAuth } from '@/context/AuthContext';
 import { Button, Card } from '@/components/ui';
+import { LEAD_SOURCES, LEAD_SOURCE_LABELS } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
-const SOURCES = ['შემომავალი ზარი', 'Facebook', 'Instagram', 'საიტი', 'რეკომენდაცია', 'სხვა'];
+// მნიშვნელობები ბაზის leads_source_check სიიდან, ლეიბლები ქართულად
+const SOURCES = LEAD_SOURCES.map((v) => ({ value: v, label: LEAD_SOURCE_LABELS[v] }));
 
 export default function NewLead() {
   const { session, role } = useAuth();
@@ -43,7 +45,7 @@ export default function NewLead() {
       full_name: fullName,
       phone,
       email,
-      source: source || 'mobile_app',
+      source: source || 'other',
       notes,
       // agent → ყოველთვის საკუთარ თავზე; მენეჯმენტიც თავიდან თავის თავზე,
       // მერე დეტალიდან გადაანაწილებს
@@ -102,11 +104,14 @@ export default function NewLead() {
           <View style={styles.sourceWrap}>
             {SOURCES.map((s) => (
               <Text
-                key={s}
-                onPress={() => setSource(source === s ? '' : s)}
-                style={[styles.sourceChip, source === s && styles.sourceChipActive]}
+                key={s.value}
+                onPress={() => setSource(source === s.value ? '' : s.value)}
+                style={[
+                  styles.sourceChip,
+                  source === s.value && styles.sourceChipActive,
+                ]}
               >
-                {s}
+                {s.label}
               </Text>
             ))}
           </View>

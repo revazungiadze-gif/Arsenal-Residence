@@ -87,3 +87,50 @@ export const PRIORITY_LABELS: Record<string, string> = {
   high: 'მაღალი',
   urgent: 'გადაუდებელი',
 };
+
+// ბაზის leads_source_check შეზღუდვის დაშვებული მნიშვნელობები —
+// აპმა მხოლოდ ეს values უნდა გააგზავნოს, ეკრანზე კი ქართული ლეიბლი აჩვენოს
+export const LEAD_SOURCES = [
+  'call',
+  'website',
+  'social',
+  'referral',
+  'walk_in',
+  'chat',
+  'other',
+] as const;
+
+export const LEAD_SOURCE_LABELS: Record<string, string> = {
+  call: 'ზარი',
+  website: 'საიტი',
+  social: 'სოც. ქსელი',
+  referral: 'რეკომენდაცია',
+  walk_in: 'ვიზიტი',
+  chat: 'ჩატი',
+  reservation: 'ჯავშანი',
+  investors_page: 'ინვესტორები',
+  apartment_inquiry: 'ბინის მოთხოვნა',
+  contact_form: 'საკონტაქტო ფორმა',
+  other: 'სხვა',
+};
+
+// ბაზის leads_loss_reason_check შეზღუდვის მნიშვნელობები
+export const LOSS_REASONS = [
+  'price',
+  'competitor',
+  'product',
+  'timing',
+  'unreachable',
+  'service',
+  'other',
+] as const;
+
+export const LOSS_REASON_LABELS: Record<string, string> = {
+  price: 'ფასი',
+  competitor: 'კონკურენტი',
+  product: 'პროდუქტი',
+  timing: 'დრო/ვადები',
+  unreachable: 'ვერ დავუკავშირდით',
+  service: 'მომსახურება',
+  other: 'სხვა',
+};

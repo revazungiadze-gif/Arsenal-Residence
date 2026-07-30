@@ -21,9 +21,11 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui';
 import {
+  LEAD_SOURCE_LABELS,
   LEAD_STATUSES,
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
+  LOSS_REASON_LABELS,
 } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
@@ -116,7 +118,7 @@ export default function Analytics() {
         {data?.topSources.map((s, i) => (
           <BarRow
             key={i}
-            label={s.source}
+            label={LEAD_SOURCE_LABELS[s.source] ?? s.source}
             count={s.count}
             max={Math.max(1, data.total)}
             color="#8B5CF6"
@@ -130,7 +132,7 @@ export default function Analytics() {
           {data.lossReasons.map((r, i) => (
             <BarRow
               key={i}
-              label={r.reason}
+              label={LOSS_REASON_LABELS[r.reason] ?? r.reason}
               count={r.count}
               max={Math.max(1, data.lost)}
               color={colors.danger}

@@ -34,9 +34,13 @@ import { addLeadInterest, fetchApartments, type ApartmentWithRefs } from '@/lib/
 import { useAuth } from '@/context/AuthContext';
 import { Badge, Button, Card, EmptyState } from '@/components/ui';
 import {
+  LEAD_SOURCES,
+  LEAD_SOURCE_LABELS,
   LEAD_STATUSES,
   LEAD_STATUS_COLORS,
   LEAD_STATUS_LABELS,
+  LOSS_REASONS,
+  LOSS_REASON_LABELS,
   PRIORITY_LABELS,
   ROLE_LABELS,
   dbRoleToAppRole,
@@ -65,9 +69,10 @@ export default function LeadDetail() {
 
   // შენიშვნის ფორმა
   const [noteText, setNoteText] = useState('');
-  // დაკარგვის მიზეზის მოდალი
+  // დაკარგვის მიზეზის მოდალი — მიზეზი ბაზის enum-იდან + თავისუფალი შენიშვნა
   const [lossModal, setLossModal] = useState(false);
   const [lossReason, setLossReason] = useState('');
+  const [lossNote, setLossNote] = useState('');
   // მინიჭების მოდალი
   const [assignModal, setAssignModal] = useState(false);
   const [team, setTeam] = useState<Profile[]>([]);
@@ -113,16 +118,17 @@ export default function LeadDetail() {
     if (!lead || status === lead.status) return;
     if (status === 'lost') {
       setLossReason('');
+      setLossNote('');
       setLossModal(true);
       return;
     }
     await applyStatus(status);
   }
 
-  async function applyStatus(status: LeadStatus, reason?: string) {
+  async function applyStatus(status: LeadStatus, reason?: string, note?: string) {
     if (!lead) return;
     setSaving(true);
-    const { error } = await updateLeadStatus(lead.id, status, reason);
+    const { error } = await updateLeadStatus(lead.id, status, reason, note);
     setSaving(false);
     if (error) {
       Alert.alert('შეცდომა', error);
@@ -347,7 +353,10 @@ export default function LeadDetail() {
       <Card>
         <Field label="ტელეფონი" value={lead.phone} />
         <Field label="ელფოსტა" value={lead.email} />
-        <Field label="წყარო" value={lead.source} />
+        <Field
+          label="წყარო"
+          value={lead.source ? LEAD_SOURCE_LABELS[lead.source] ?? lead.source : null}
+        />
         <Field
           label="ბიუჯეტი"
           value={
@@ -359,7 +368,14 @@ export default function LeadDetail() {
         <Field label="ბინის კოდი" value={lead.apartment_code} />
         <Field label="შეხვედრა" value={fmt(lead.meeting_date)} />
         {status === 'lost' ? (
-          <Field label="დაკარგვის მიზეზი" value={lead.loss_reason} />
+          <Field
+            label="დაკარგვის მიზეზი"
+            value={
+              lead.loss_reason
+                ? LOSS_REASON_LABELS[lead.loss_reason] ?? lead.loss_reason
+                : null
+            }
+          />
         ) : null}
         <Field label="შექმნილია" value={fmt(lead.created_at)} last />
       </Card>
@@ -459,19 +475,37 @@ export default function LeadDetail() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>რატომ დაიკარგა ლიდი?</Text>
+            {/* მიზეზი ბაზის დაშვებული სიიდან (leads_loss_reason_check) */}
+            <View style={styles.lossChipWrap}>
+              {LOSS_REASONS.map((r) => (
+                <Pressable
+                  key={r}
+                  onPress={() => setLossReason(lossReason === r ? '' : r)}
+                  style={[styles.lossChip, lossReason === r && styles.lossChipActive]}
+                >
+                  <Text
+                    style={[
+                      styles.lossChipText,
+                      lossReason === r && styles.lossChipTextActive,
+                    ]}
+                  >
+                    {LOSS_REASON_LABELS[r]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             <TextInput
               style={styles.noteInput}
-              placeholder="მიზეზი (ფასი, კონკურენტი, ლოკაცია...)"
+              placeholder="დამატებითი კომენტარი (არასავალდებულო)"
               placeholderTextColor={colors.textMuted}
-              value={lossReason}
-              onChangeText={setLossReason}
+              value={lossNote}
+              onChangeText={setLossNote}
               multiline
-              autoFocus
             />
             <View style={{ gap: spacing.sm }}>
               <Button
                 title="დადასტურება"
-                onPress={() => applyStatus('lost', lossReason)}
+                onPress={() => applyStatus('lost', lossReason || 'other', lossNote)}
                 loading={saving}
               />
               <Button
@@ -517,13 +551,28 @@ export default function LeadDetail() {
                     autoCapitalize="none"
                     keyboardType="email-address"
                   />
-                  <TextInput
-                    style={styles.noteInput}
-                    value={eSource}
-                    onChangeText={setESource}
-                    placeholder="წყარო"
-                    placeholderTextColor={colors.textMuted}
-                  />
+                  {/* წყარო — მხოლოდ ბაზის დაშვებული მნიშვნელობებიდან */}
+                  <View style={styles.lossChipWrap}>
+                    {LEAD_SOURCES.map((s) => (
+                      <Pressable
+                        key={s}
+                        onPress={() => setESource(eSource === s ? '' : s)}
+                        style={[
+                          styles.lossChip,
+                          eSource === s && styles.lossChipActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.lossChipText,
+                            eSource === s && styles.lossChipTextActive,
+                          ]}
+                        >
+                          {LEAD_SOURCE_LABELS[s]}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </>
               ) : (
                 <Text style={styles.sectionLabel}>
@@ -740,6 +789,26 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   interestAddText: { fontSize: font.size.sm, color: colors.textMuted },
+  lossChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  lossChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    backgroundColor: colors.bg,
+  },
+  lossChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  lossChipText: { fontSize: font.size.sm, color: colors.text },
+  lossChipTextActive: { color: colors.textInverse, fontWeight: font.weight.bold },
   noteInput: {
     minHeight: 70,
     borderWidth: 1,

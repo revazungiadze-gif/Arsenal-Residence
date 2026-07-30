@@ -4,22 +4,32 @@
  * აქ მხოლოდ მოსახერხებელი ფენაა.
  */
 import { supabase } from '@/lib/supabase';
+import { LEAD_SOURCES, LOSS_REASONS } from '@/types/crm';
 import type { Lead, LeadStatus, Profile } from '@/types/crm';
 
 type Result = { error: string | null };
 
-/** სტატუსის შეცვლა; 'lost'-ზე გადასვლისას მიზეზიც ინახება */
+/**
+ * სტატუსის შეცვლა; 'lost'-ზე გადასვლისას მიზეზი enum-იდან ინახება
+ * (ბაზის leads_loss_reason_check ამას ითხოვს), თავისუფალი ტექსტი — loss_note-ში.
+ */
 export async function updateLeadStatus(
   id: string,
   status: LeadStatus,
-  lossReason?: string
+  lossReason?: string,
+  lossNote?: string
 ): Promise<Result> {
   const patch: Partial<Lead> = {
     status,
     updated_at: new Date().toISOString(),
   };
   if (status === 'lost') {
-    patch.loss_reason = lossReason?.trim() || null;
+    patch.loss_reason = (LOSS_REASONS as readonly string[]).includes(
+      lossReason ?? ''
+    )
+      ? lossReason
+      : 'other';
+    patch.loss_note = lossNote?.trim() || null;
   }
   const { error } = await supabase.from('leads').update(patch).eq('id', id);
   return { error: error?.message ?? null };
@@ -108,7 +118,12 @@ export async function createLead(input: {
       full_name: input.full_name.trim(),
       phone: input.phone?.trim() || null,
       email: input.email?.trim() || null,
-      source: input.source?.trim() || 'mobile_app',
+      // ბაზა source-ზე CHECK-ს ამოწმებს — უცნობი მნიშვნელობა 'other' ხდება
+      source: (LEAD_SOURCES as readonly string[]).includes(
+        input.source?.trim() ?? ''
+      )
+        ? input.source!.trim()
+        : 'other',
       notes: input.notes?.trim() || null,
       priority: input.priority || 'medium',
       status: 'new',
