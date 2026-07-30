@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.bg,
   },
-  tabBtnActive: { backgroundColor: colors.dark, borderColor: colors.dark },
+  tabBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabBtnText: { fontSize: font.size.sm, color: colors.text },
   tabBtnTextActive: { color: colors.textInverse, fontWeight: font.weight.semibold },
   check: {
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: colors.bg,
   },
-  chipActive: { backgroundColor: colors.dark, borderColor: colors.dark },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: font.size.sm, color: colors.text },
   chipTextActive: { color: colors.textInverse, fontWeight: font.weight.semibold },
 });

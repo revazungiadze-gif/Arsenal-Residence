@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     fontSize: font.size.md,
     color: colors.text,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.inputBg,
   },
   error: { color: colors.danger, fontSize: font.size.sm, marginTop: spacing.md },
   footer: {

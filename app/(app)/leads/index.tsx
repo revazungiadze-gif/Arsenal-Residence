@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bg,
   },
-  chipActive: { backgroundColor: colors.dark, borderColor: colors.dark },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: font.size.sm, color: colors.text },
   chipTextActive: { color: colors.textInverse, fontWeight: font.weight.semibold },
   row: {

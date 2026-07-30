@@ -1,28 +1,32 @@
 /**
  * src/theme/index.ts
  *
- * აპის ფერები. აქცენტ-ფერები აქტიური კომპანიის ბრენდიდან მოდის
- * (white-label), დანარჩენი — ნეიტრალური პალიტრა.
+ * აპის ფერები — ვებ-CRM-ის ზუსტი პალიტრა (tailwind.config.ts-დან):
+ *   brand.dark #1a1a1a · ბარათი #2a2a2a · teal #00B4A6 · gold #C9A84C
+ *   ტექსტი: თეთრი / gray-400 #A0A0A0 · სტატუსები: 22C55E/EAB308/EF4444
+ * აქცენტ-ფერები აქტიური კომპანიის ბრენდიდან მოდის (white-label).
  */
 import { getActiveTenant } from '@/config/tenants';
 
 const branding = getActiveTenant().branding;
 
 export const colors = {
-  primary: branding.primaryColor,
-  dark: branding.darkColor,
+  primary: branding.primaryColor, // arsenal: teal #00B4A6
+  gold: '#C9A84C',
+  dark: branding.darkColor, // arsenal: #1a1a1a (ჰედერები/ტაბ-ბარი)
 
-  bg: '#F6F7F9',
-  card: '#FFFFFF',
-  border: '#E6E8EB',
+  bg: '#141414',
+  card: '#1e1e1e',
+  border: '#2e2e2e',
+  inputBg: '#242424',
 
-  text: '#111827',
-  textMuted: '#6B7280',
+  text: '#FFFFFF',
+  textMuted: '#A0A0A0',
   textInverse: '#FFFFFF',
 
   success: '#22C55E',
   danger: '#EF4444',
-  warning: '#F59E0B',
+  warning: '#EAB308',
 };
 
 export const spacing = {

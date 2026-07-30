@@ -38,6 +38,11 @@ export default function AppLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: 10 },
+        tabBarStyle: {
+          backgroundColor: colors.dark,
+          borderTopColor: colors.border,
+        },
+        sceneStyle: { backgroundColor: colors.bg },
       }}
     >
       <Tabs.Screen

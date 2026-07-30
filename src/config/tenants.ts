@@ -73,9 +73,9 @@ export const TENANTS: Record<string, Tenant> = {
     supabaseAnonKey:
       ENV.ARSENAL_KEY || 'sb_publishable__NGjpB8oY3tn0YKb36ODAA_eZG53Kvq',
     branding: {
-      displayName: 'Arsenal Residence',
-      primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
-      darkColor: '#0B1F3A', // მუქი ლურჯი
+      displayName: 'Arsenal CRM',
+      primaryColor: '#00B4A6', // teal — ვებ-CRM-ის აქცენტი
+      darkColor: '#1a1a1a', // brand.dark
       logoAsset: require('../../assets/logo-arsenal.png'),
     },
     features: {

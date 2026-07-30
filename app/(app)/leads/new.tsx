@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     fontSize: font.size.md,
     color: colors.text,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.inputBg,
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   sourceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   sourceChipActive: {
-    backgroundColor: colors.dark,
-    borderColor: colors.dark,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
     color: colors.textInverse,
   },
 });

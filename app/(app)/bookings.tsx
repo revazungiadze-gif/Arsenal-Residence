@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.bg,
   },
-  tabBtnActive: { backgroundColor: colors.dark, borderColor: colors.dark },
+  tabBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabBtnText: { fontSize: font.size.sm, color: colors.text },
   tabBtnTextActive: { color: colors.textInverse, fontWeight: font.weight.semibold },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
