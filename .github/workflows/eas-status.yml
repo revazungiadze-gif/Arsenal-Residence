@@ -1,0 +1,52 @@
+name: EAS Build Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'How many recent builds to list'
+        required: false
+        default: '3'
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN საიდუმლო არ არის დაყენებული"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: List recent builds
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx --yes eas-cli@latest build:list \
+            --limit "${{ github.event.inputs.limit || '3' }}" \
+            --non-interactive --json > builds.json
+          echo "===== BUILDS ====="
+          cat builds.json | python3 -c "
+          import json, sys
+          builds = json.load(sys.stdin)
+          for b in builds:
+              print('---')
+              print('id:        ', b.get('id'))
+              print('platform:  ', b.get('platform'))
+              print('status:    ', b.get('status'))
+              print('profile:   ', b.get('buildProfile'))
+              print('created:   ', b.get('createdAt'))
+              print('completed: ', b.get('completedAt'))
+              art = b.get('artifacts') or {}
+              print('apk/url:   ', art.get('buildUrl') or art.get('applicationArchiveUrl'))
+              err = b.get('error') or {}
+              if err:
+                  print('error:     ', err.get('message'))
+          "
