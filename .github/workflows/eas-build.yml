@@ -1,0 +1,66 @@
+# ═══════════════════════════════════════════════════════════════════════
+# EAS Build ხიდი — ნამდვილი დაინსტალირებადი აპის აწყობა Expo-ს ღრუბელში
+#
+# საჭიროებს საიდუმლოს: EXPO_TOKEN
+#   (expo.dev → Account Settings → Access tokens → Create token,
+#    შემდეგ: repo → Settings → Secrets → Actions → New secret: EXPO_TOKEN)
+# ═══════════════════════════════════════════════════════════════════════
+name: EAS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'პლატფორმა'
+        required: true
+        default: 'android'
+        type: choice
+        options: [android, ios, all]
+      profile:
+        description: 'build პროფილი'
+        required: true
+        default: 'preview'
+        type: choice
+        options: [preview, production]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN საიდუმლო არ არის დაყენებული (Settings → Secrets → Actions)"
+            exit 1
+          fi
+          npm install -g eas-cli
+          eas whoami
+
+      - name: Init EAS project (idempotent)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas init --non-interactive --force
+
+      - name: Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build \
+            --platform ${{ github.event.inputs.platform }} \
+            --profile ${{ github.event.inputs.profile }} \
+            --non-interactive \
+            --no-wait
+          echo "─────────────────────────────────────────"
+          echo "✅ Build გაეშვა Expo-ს ღრუბელში."
+          echo "პროგრესი და ჩამოტვირთვის ლინკი: https://expo.dev → პროექტი siaremi-mobile → Builds"

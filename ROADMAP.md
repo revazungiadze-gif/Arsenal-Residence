@@ -104,13 +104,17 @@
       polish-ში, სურვილისამებრ
 - [ ] ✔️ შემოწმება: ქულები ემთხვევა ვებ-კოპილოტს
 
-## ეტაპი 10 — გაპრიალება + გამოცემა 🚀
+## ეტაპი 10 — გაპრიალება + გამოცემა 🚀 (მიმდინარე)
 
-- [ ] ლოგო, icon, splash — არსენალის ბრენდით (და tenant-ის მიხედვით ცვალებადი)
-- [ ] i18n (ka/en/ru — ვების messages-ის სარკე)
-- [ ] Offline-მდგრადობა (ქეშირება, retry)
-- [ ] EAS Build → TestFlight (iOS) + Internal testing (Android)
-- [ ] White-label ინსტრუქცია: „ახალი კომპანიის დამატება 10 ნაბიჯში"
+- [x] ლოგო, icon, splash, adaptive icon — არსენალის ბრენდით (assets/)
+- [x] eas.json (preview=APK internal, production=store)
+- [x] EAS Build ხიდი GitHub Actions-ში (.github/workflows/eas-build.yml)
+- [x] White-label ინსტრუქცია (WHITE-LABEL.md) — ახალი კომპანია 4 ნაბიჯში
+- [ ] EXPO_TOKEN საიდუმლო (მომხმარებლის ერთჯერადი ნაბიჯი) → პირველი APK build
+- [ ] Push-შეტყობინებები (expo-notifications) — dev build-ის მერე
+- [ ] TestFlight (iOS) — საჭიროებს Apple Developer ანგარიშს ($99/წ)
+- [ ] Google Play — საჭიროებს Play Console ანგარიშს ($25 ერთჯერადი)
+- [ ] i18n (ka/en/ru) — სურვილისამებრ
 
 ---
 
