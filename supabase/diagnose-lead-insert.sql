@@ -5,6 +5,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
 
 create temp table diag(step text, info text);
+grant all on diag to authenticated;
 
 insert into diag
 select 'constraint: ' || conname, pg_get_constraintdef(oid)
