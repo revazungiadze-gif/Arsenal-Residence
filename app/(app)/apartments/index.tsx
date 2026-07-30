@@ -26,8 +26,10 @@ import { colors, font, radius, spacing } from '@/theme';
 const STATUS_FILTERS = ['all', 'available', 'reserved', 'sold'] as const;
 const BEDROOM_FILTERS = [0, 1, 2, 3] as const; // 0 = ყველა, 3 = 3+
 
+let apartmentsCache: ApartmentWithRefs[] = [];
+
 export default function ApartmentsList() {
-  const [apartments, setApartments] = useState<ApartmentWithRefs[]>([]);
+  const [apartments, setApartments] = useState<ApartmentWithRefs[]>(apartmentsCache);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('all');
@@ -36,8 +38,9 @@ export default function ApartmentsList() {
   const [priceMax, setPriceMax] = useState('');
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setApartments(await fetchApartments());
+    if (apartmentsCache.length === 0) setLoading(true);
+    apartmentsCache = await fetchApartments();
+    setApartments(apartmentsCache);
     setLoading(false);
   }, []);
 

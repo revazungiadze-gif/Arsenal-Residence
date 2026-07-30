@@ -29,15 +29,21 @@ type Counts = Record<LeadStatus, number>;
 const emptyCounts = () =>
   LEAD_STATUSES.reduce((acc, s) => ({ ...acc, [s]: 0 }), {} as Counts);
 
+let dashCache: {
+  counts: Counts;
+  total: number;
+  apt: { available: number; reserved: number; sold: number };
+} | null = null;
+
 export default function Dashboard() {
   const { profile, role } = useAuth();
-  const [counts, setCounts] = useState<Counts>(emptyCounts());
-  const [total, setTotal] = useState(0);
-  const [apt, setApt] = useState({ available: 0, reserved: 0, sold: 0 });
+  const [counts, setCounts] = useState<Counts>(dashCache?.counts ?? emptyCounts());
+  const [total, setTotal] = useState(dashCache?.total ?? 0);
+  const [apt, setApt] = useState(dashCache?.apt ?? { available: 0, reserved: 0, sold: 0 });
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!dashCache) setLoading(true);
     // თითო სტატუსზე count(head) — მსუბუქი მოთხოვნა (მონაცემებს არ ეწევა)
     const next = emptyCounts();
     let sum = 0;
@@ -59,6 +65,7 @@ export default function Dashboard() {
         aptNext[s] = count ?? 0;
       }),
     ]);
+    dashCache = { counts: next, total: sum, apt: aptNext };
     setCounts(next);
     setTotal(sum);
     setApt(aptNext);

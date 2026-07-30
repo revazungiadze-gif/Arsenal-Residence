@@ -16,13 +16,16 @@ import { Badge, Card, EmptyState } from '@/components/ui';
 import { ROLE_LABELS, dbRoleToAppRole } from '@/types/crm';
 import { colors, font, spacing } from '@/theme';
 
+let teamCache: TeamMemberStats[] = [];
+
 export default function Team() {
-  const [members, setMembers] = useState<TeamMemberStats[]>([]);
+  const [members, setMembers] = useState<TeamMemberStats[]>(teamCache);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setMembers(await fetchTeamStats());
+    if (teamCache.length === 0) setLoading(true);
+    teamCache = await fetchTeamStats();
+    setMembers(teamCache);
     setLoading(false);
   }, []);
 

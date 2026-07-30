@@ -34,9 +34,11 @@ import { colors, font, radius, spacing } from '@/theme';
 
 const CAN_REVIEW = ['admin', 'director'];
 
+let bookingsCache: BookingWithRefs[] = [];
+
 export default function Bookings() {
   const { session, role } = useAuth();
-  const [bookings, setBookings] = useState<BookingWithRefs[]>([]);
+  const [bookings, setBookings] = useState<BookingWithRefs[]>(bookingsCache);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const [saving, setSaving] = useState(false);
@@ -54,8 +56,9 @@ export default function Bookings() {
   const [rejectReason, setRejectReason] = useState('');
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setBookings(await fetchBookings());
+    if (bookingsCache.length === 0) setLoading(true);
+    bookingsCache = await fetchBookings();
+    setBookings(bookingsCache);
     setLoading(false);
   }, []);
 

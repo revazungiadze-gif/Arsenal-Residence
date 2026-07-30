@@ -27,22 +27,27 @@ import {
 } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
+let analyticsCache: { data: AnalyticsData | null; bonus: BonusData | null } | null = null;
+
 export default function Analytics() {
   const { role } = useAuth();
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [bonus, setBonus] = useState<BonusData | null>(null);
+  const [data, setData] = useState<AnalyticsData | null>(analyticsCache?.data ?? null);
+  const [bonus, setBonus] = useState<BonusData | null>(analyticsCache?.bonus ?? null);
   const [loading, setLoading] = useState(false);
 
   const isMarketing = role === 'marketing';
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!analyticsCache) setLoading(true);
     if (isMarketing) {
       // marketing ლიდებს პირდაპირ ვერ კითხულობს — აგრეგატები RPC-დან
-      setData(await fetchMarketingStats());
+      const a = await fetchMarketingStats();
+      analyticsCache = { data: a, bonus: null };
+      setData(a);
       setBonus(null);
     } else {
       const [a, b] = await Promise.all([fetchAnalytics(), fetchBonuses()]);
+      analyticsCache = { data: a, bonus: b };
       setData(a);
       setBonus(b);
     }

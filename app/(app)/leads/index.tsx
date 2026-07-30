@@ -24,20 +24,25 @@ import {
 } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
+// ბოლო მონაცემების ქეში — ტაბზე დაბრუნებისას მყისიერი ჩვენება,
+// განახლება ფონურად (stale-while-revalidate)
+let leadsCache: Lead[] = [];
+
 export default function LeadsList() {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<Lead[]>(leadsCache);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<LeadStatus | 'all'>('all');
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (leadsCache.length === 0) setLoading(true);
     const { data } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    setLeads(data ?? []);
+    leadsCache = data ?? [];
+    setLeads(leadsCache);
     setLoading(false);
   }, []);
 

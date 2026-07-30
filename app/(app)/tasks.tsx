@@ -47,9 +47,11 @@ const DUE_OPTIONS = [
 ];
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 
+let tasksCache: TaskWithLead[] = [];
+
 export default function Tasks() {
   const { session, role } = useAuth();
-  const [tasks, setTasks] = useState<TaskWithLead[]>([]);
+  const [tasks, setTasks] = useState<TaskWithLead[]>(tasksCache);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<'active' | 'done'>('active');
 
@@ -64,8 +66,9 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setTasks(await fetchTasks());
+    if (tasksCache.length === 0) setLoading(true);
+    tasksCache = await fetchTasks();
+    setTasks(tasksCache);
     setLoading(false);
   }, []);
 

@@ -15,15 +15,18 @@ import { fetchDeals, type Deal } from '@/lib/deals';
 import { Card, EmptyState } from '@/components/ui';
 import { colors, font, spacing } from '@/theme';
 
+let dealsCache: { deals: Deal[]; totalValue: number; currency: string } | null = null;
+
 export default function Deals() {
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [totalValue, setTotalValue] = useState(0);
-  const [currency, setCurrency] = useState('$');
+  const [deals, setDeals] = useState<Deal[]>(dealsCache?.deals ?? []);
+  const [totalValue, setTotalValue] = useState(dealsCache?.totalValue ?? 0);
+  const [currency, setCurrency] = useState(dealsCache?.currency ?? '$');
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    if (!dealsCache) setLoading(true);
     const res = await fetchDeals();
+    dealsCache = res;
     setDeals(res.deals);
     setTotalValue(res.totalValue);
     setCurrency(res.currency);

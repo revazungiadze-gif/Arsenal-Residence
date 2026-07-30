@@ -25,13 +25,16 @@ import { Card, EmptyState } from '@/components/ui';
 import { LEAD_STATUS_LABELS, type LeadStatus } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
+let copilotCache: CopilotLead[] = [];
+
 export default function AiCopilot() {
-  const [items, setItems] = useState<CopilotLead[]>([]);
+  const [items, setItems] = useState<CopilotLead[]>(copilotCache);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setItems(await fetchCopilotLeads());
+    if (copilotCache.length === 0) setLoading(true);
+    copilotCache = await fetchCopilotLeads();
+    setItems(copilotCache);
     setLoading(false);
   }, []);
 

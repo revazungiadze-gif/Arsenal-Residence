@@ -25,14 +25,17 @@ import { EmptyState } from '@/components/ui';
 import type { NotificationRow } from '@/types/crm';
 import { colors, font, radius, spacing } from '@/theme';
 
+let notifCache: NotificationRow[] = [];
+
 export default function Notifications() {
   const { session } = useAuth();
-  const [items, setItems] = useState<NotificationRow[]>([]);
+  const [items, setItems] = useState<NotificationRow[]>(notifCache);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setItems(await fetchNotifications());
+    if (notifCache.length === 0) setLoading(true);
+    notifCache = await fetchNotifications();
+    setItems(notifCache);
     setLoading(false);
   }, []);
 
