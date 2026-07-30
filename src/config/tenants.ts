@@ -18,8 +18,8 @@ export interface TenantBranding {
   primaryColor: string;
   /** მუქი ფონი (splash, header) */
   darkColor: string;
-  /** ლოგოს URL ან require() — არასავალდებულო */
-  logoUrl?: string;
+  /** ლოგოს asset — require('...') (login-ეკრანზე ჩანს); არასავალდებულო */
+  logoAsset?: number;
 }
 
 export interface Tenant {
@@ -76,6 +76,7 @@ export const TENANTS: Record<string, Tenant> = {
       displayName: 'Arsenal Residence',
       primaryColor: '#C8A24B', // ოქროსფერი აქცენტი
       darkColor: '#0B1F3A', // მუქი ლურჯი
+      logoAsset: require('../../assets/logo-arsenal.png'),
     },
     features: {
       leads: true,

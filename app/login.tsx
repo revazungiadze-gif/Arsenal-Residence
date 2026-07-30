@@ -4,6 +4,7 @@
  */
 import { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -46,9 +47,17 @@ export default function Login() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <Text style={[styles.brand, { color: tenant.branding.primaryColor }]}>
-          {tenant.branding.displayName}
-        </Text>
+        {tenant.branding.logoAsset ? (
+          <Image
+            source={tenant.branding.logoAsset}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        ) : (
+          <Text style={[styles.brand, { color: tenant.branding.primaryColor }]}>
+            {tenant.branding.displayName}
+          </Text>
+        )}
         <Text style={styles.subtitle}>სიარემი · CRM</Text>
       </View>
 
@@ -90,6 +99,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: spacing.xl },
   header: { alignItems: 'center', marginBottom: spacing.xxl },
+  logo: { width: 280, height: 90 },
   brand: { fontSize: font.size.xxl, fontWeight: font.weight.bold },
   subtitle: { color: '#94A3B8', fontSize: font.size.md, marginTop: spacing.xs },
   form: {
