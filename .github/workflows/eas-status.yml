@@ -25,13 +25,28 @@ jobs:
         with:
           node-version: 20
 
+      - name: Link EAS project
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx --yes eas-cli@latest init --non-interactive --force
+
       - name: List recent builds
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set +e
           npx --yes eas-cli@latest build:list \
             --limit "${{ github.event.inputs.limit || '3' }}" \
-            --non-interactive --json > builds.json
+            --non-interactive --json > builds.json 2> stderr.txt
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            echo "===== STDERR ====="
+            cat stderr.txt
+            echo "===== STDOUT ====="
+            cat builds.json
+            exit $rc
+          fi
+          set -e
           echo "===== BUILDS ====="
           cat builds.json | python3 -c "
           import json, sys
