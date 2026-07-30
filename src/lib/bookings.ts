@@ -37,10 +37,12 @@ export async function fetchAvailableApartments(): Promise<Apartment[]> {
 export async function fetchMyLeads(): Promise<Lead[]> {
   const { data } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, full_name, phone, status, created_at')
     .order('created_at', { ascending: false })
     .limit(300);
-  return (data ?? []).filter((l) => l.status !== 'won' && l.status !== 'lost');
+  return ((data ?? []) as Lead[]).filter(
+    (l) => l.status !== 'won' && l.status !== 'lost'
+  );
 }
 
 export async function createBooking(input: {

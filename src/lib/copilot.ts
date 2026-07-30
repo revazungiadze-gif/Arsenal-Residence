@@ -110,7 +110,7 @@ export async function fetchCopilotLeads(limit = 20): Promise<CopilotLead[]> {
   // .not(...,'in',...) სინტაქსი ზოგ გარემოში ცარიელს აბრუნებდა
   const { data, error } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, full_name, phone, email, status, source, budget_max, created_at')
     .order('created_at', { ascending: false })
     .limit(500);
   if (error) console.warn('[copilot] query error:', error.message);

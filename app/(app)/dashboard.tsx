@@ -44,27 +44,46 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     if (!dashCache) setLoading(true);
-    // თითო სტატუსზე count(head) — მსუბუქი მოთხოვნა (მონაცემებს არ ეწევა)
     const next = emptyCounts();
     let sum = 0;
     const aptNext = { available: 0, reserved: 0, sold: 0 };
-    await Promise.all([
-      ...LEAD_STATUSES.map(async (status) => {
-        const { count } = await supabase
-          .from('leads')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', status);
-        next[status] = count ?? 0;
-        sum += count ?? 0;
-      }),
-      ...(['available', 'reserved', 'sold'] as const).map(async (s) => {
-        const { count } = await supabase
-          .from('apartments')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', s);
-        aptNext[s] = count ?? 0;
-      }),
-    ]);
+    // ერთი RPC ყველა მრიცხველზე — მობილურზე ლატენტურობა ჯამდება,
+    // ამიტომ 10 ცალკე count-მოთხოვნის ნაცვლად 1 საკმარისია (RLS მოქმედებს)
+    const { data: agg, error } = await supabase.rpc(
+      'mobile_dashboard_counts' as never
+    );
+    if (!error && agg) {
+      const a = agg as unknown as {
+        leads: Record<string, number>;
+        apartments: Record<string, number>;
+      };
+      for (const status of LEAD_STATUSES) {
+        next[status] = a.leads?.[status] ?? 0;
+        sum += next[status];
+      }
+      for (const s of ['available', 'reserved', 'sold'] as const) {
+        aptNext[s] = a.apartments?.[s] ?? 0;
+      }
+    } else {
+      // ძველი გზა, თუ RPC ჯერ არ არის ბაზაში
+      await Promise.all([
+        ...LEAD_STATUSES.map(async (status) => {
+          const { count } = await supabase
+            .from('leads')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', status);
+          next[status] = count ?? 0;
+          sum += count ?? 0;
+        }),
+        ...(['available', 'reserved', 'sold'] as const).map(async (s) => {
+          const { count } = await supabase
+            .from('apartments')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', s);
+          aptNext[s] = count ?? 0;
+        }),
+      ]);
+    }
     dashCache = { counts: next, total: sum, apt: aptNext };
     setCounts(next);
     setTotal(sum);

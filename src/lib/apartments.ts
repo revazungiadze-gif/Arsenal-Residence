@@ -17,11 +17,14 @@ export interface ApartmentImage {
 }
 
 export async function fetchApartments(): Promise<ApartmentWithRefs[]> {
+  // სიისთვის საკმარისი სვეტები — სრულ ბარათს დეტალის ეკრანი თავად ეწევა
   const { data } = await supabase
     .from('apartments')
-    .select('*, blocks(name), floors(number)')
+    .select(
+      'id, code, status, price, currency, area, bedrooms, block_id, floor_id, blocks(name), floors(number)'
+    )
     .order('code');
-  return (data as ApartmentWithRefs[]) ?? [];
+  return (data as unknown as ApartmentWithRefs[]) ?? [];
 }
 
 export async function fetchApartmentImages(
@@ -52,10 +55,12 @@ export async function addLeadInterest(
 export async function fetchActiveLeads(): Promise<Lead[]> {
   const { data } = await supabase
     .from('leads')
-    .select('*')
+    .select('id, full_name, phone, status, created_at')
     .order('created_at', { ascending: false })
     .limit(300);
-  return (data ?? []).filter((l) => l.status !== 'won' && l.status !== 'lost');
+  return ((data ?? []) as Lead[]).filter(
+    (l) => l.status !== 'won' && l.status !== 'lost'
+  );
 }
 
 export const APT_STATUS_LABELS: Record<string, string> = {

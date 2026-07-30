@@ -36,12 +36,13 @@ export default function LeadsList() {
 
   const load = useCallback(async () => {
     if (leadsCache.length === 0) setLoading(true);
+    // მხოლოდ ის სვეტები, რასაც სია აჩვენებს — payload მკვეთრად პატარავდება
     const { data } = await supabase
       .from('leads')
-      .select('*')
+      .select('id, full_name, phone, email, status, created_at')
       .order('created_at', { ascending: false })
       .limit(200);
-    leadsCache = data ?? [];
+    leadsCache = (data ?? []) as Lead[];
     setLeads(leadsCache);
     setLoading(false);
   }, []);
