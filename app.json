@@ -2,7 +2,7 @@
   "expo": {
     "name": "სიარემი CRM",
     "slug": "siaremi-mobile",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "siaremi",
     "userInterfaceStyle": "automatic",
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a1a"
       },
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/favicon.png"
