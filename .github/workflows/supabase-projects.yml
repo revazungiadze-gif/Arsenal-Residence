@@ -1,0 +1,38 @@
+name: Supabase Projects
+
+on:
+  workflow_dispatch:
+    inputs:
+      keys_for:
+        description: 'პროექტის ref, რომლის publishable გასაღებიც გვინდა (ცარიელი = მხოლოდ სია)'
+        required: false
+        default: ''
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List projects
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -e
+          echo "===== PROJECTS ====="
+          curl -sS "https://api.supabase.com/v1/projects" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+          | jq -r '.[] | "\(.id)  |  \(.name)  |  \(.region)  |  created: \(.created_at)"'
+
+      - name: Get publishable key (safe to print — public by design)
+        if: ${{ github.event.inputs.keys_for != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ github.event.inputs.keys_for }}
+        run: |
+          set -e
+          echo "===== PUBLISHABLE KEYS ($REF) ====="
+          # ვბეჭდავთ მხოლოდ publishable/anon გასაღებებს — service/secret არასდროს
+          curl -sS "https://api.supabase.com/v1/projects/$REF/api-keys" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+          | jq -r '.[] | select(.type == "publishable" or .name == "anon")
+                   | "\(.name): \(.api_key)"' || true
+          echo "URL: https://$REF.supabase.co"
