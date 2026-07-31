@@ -93,4 +93,13 @@ export const NOTIFICATION_TYPE_ICONS: Record<string, string> = {
   task: '📋',
   lead: '👤',
   booking: '🔖',
+  // ბაზის notifications_type_check-ის რეალური ტიპები (ვების მხრიდანაც მოდის)
+  new_lead: '👤',
+  lead_assigned: '👤',
+  stage_changed: '🔄',
+  task_assigned: '📋',
+  task_due: '⏰',
+  sla_warning: '⚠️',
+  construction_update: '🏗️',
+  system: 'ℹ️',
 };

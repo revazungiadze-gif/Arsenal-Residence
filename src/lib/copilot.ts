@@ -56,6 +56,15 @@ export function analyzeLeadPriority(lead: Lead): number {
     social_media: 6,
     advertisement: 4,
     cold_call: 2,
+    // ბაზის leads_source_check-ის რეალური მნიშვნელობები (იგივე ლოგიკით)
+    walk_in: 12,
+    call: 10,
+    reservation: 10,
+    apartment_inquiry: 10,
+    chat: 8,
+    contact_form: 8,
+    investors_page: 8,
+    social: 6,
   };
   score += sourceScores[lead.source ?? ''] ?? 3;
 

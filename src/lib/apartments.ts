@@ -43,11 +43,12 @@ export async function addLeadInterest(
   leadId: string,
   apartment: Apartment
 ): Promise<{ error: string | null }> {
+  // ბაზის CHECK იღებს მხოლოდ low/medium/high — ხელით მიბმა medium-ია
   const { error } = await supabase.from('lead_apartment_interests').insert({
     lead_id: leadId,
     apartment_id: apartment.id,
     apartment_code: apartment.code,
-    interest_type: 'interested',
+    interest_type: 'medium',
   });
   return { error: error?.message ?? null };
 }
@@ -65,14 +66,18 @@ export async function fetchActiveLeads(): Promise<Lead[]> {
 
 export const APT_STATUS_LABELS: Record<string, string> = {
   available: 'ხელმისაწვდომი',
+  pending_approval: 'დასამტკიცებელი',
   reserved: 'დაჯავშნული',
   sold: 'გაყიდული',
+  unavailable: 'მიუწვდომელი',
 };
 
 export const APT_STATUS_COLORS: Record<string, string> = {
   available: '#22C55E',
+  pending_approval: '#F59E0B',
   reserved: '#F59E0B',
   sold: '#EF4444',
+  unavailable: '#6B7280',
 };
 
 export function fmtPrice(a: Apartment): string {

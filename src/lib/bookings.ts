@@ -124,16 +124,17 @@ export async function reviewBooking(
     .eq('id', booking.apartment_id);
 
   // შეტყობინება მთხოვნელს
+  // notifications.type-ზე ბაზას CHECK აქვს — 'system' ერთადერთი უნივერსალურია
   const code = booking.apartments?.code ?? '';
   const notif =
     action === 'approve'
-      ? { title: '✅ ჯავშანი დამტკიცდა', message: `ბინა ${code} დაჯავშნულია`, type: 'success' }
+      ? { title: '✅ ჯავშანი დამტკიცდა', message: `ბინა ${code} დაჯავშნულია`, type: 'system' }
       : action === 'reject'
-        ? { title: '❌ ჯავშანი უარყოფილია', message: `ბინა ${code} — მიზეზი: ${rejectReason}`, type: 'warning' }
+        ? { title: '❌ ჯავშანი უარყოფილია', message: `ბინა ${code} — მიზეზი: ${rejectReason}`, type: 'system' }
         : {
             title: '↩️ ჯავშანი გაუქმდა',
             message: `ბინა ${code} კვლავ ხელმისაწვდომია${rejectReason?.trim() ? ` — მიზეზი: ${rejectReason}` : ''}`,
-            type: 'warning',
+            type: 'system',
           };
   await supabase.from('notifications').insert({
     user_id: booking.requested_by,
