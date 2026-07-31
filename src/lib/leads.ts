@@ -23,7 +23,7 @@ export async function updateLeadStatus(
     status,
     updated_at: new Date().toISOString(),
   };
-  if (status === 'lost') {
+  if ((status as string) === 'lost' || status === 'not_interested') {
     patch.loss_reason = (LOSS_REASONS as readonly string[]).includes(
       lossReason ?? ''
     )
@@ -126,7 +126,7 @@ export async function createLead(input: {
         : 'other',
       notes: input.notes?.trim() || null,
       priority: input.priority || 'medium',
-      status: 'new',
+      status: 'to_contact',
       assigned_to: input.assigned_to,
       assigned_at: input.assigned_to ? new Date().toISOString() : null,
     })

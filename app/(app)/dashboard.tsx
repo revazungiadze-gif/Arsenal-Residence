@@ -97,7 +97,8 @@ export default function Dashboard() {
     }, [load])
   );
 
-  const activeLeads = total - counts.won - counts.lost;
+  const activeLeads =
+    total - counts.won - counts.not_interested - counts.invalid;
 
   return (
     <ScrollView

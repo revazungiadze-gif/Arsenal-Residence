@@ -35,13 +35,14 @@ export async function fetchAnalytics(): Promise<AnalyticsData> {
   const reasons: Record<string, number> = {};
 
   for (const l of leads) {
-    const s = (l.status as LeadStatus) ?? 'new';
+    const s = (l.status as LeadStatus) ?? 'to_contact';
     if (byStatus[s] != null) byStatus[s]++;
     const src = l.source?.trim() || 'უცნობი';
     sources[src] = (sources[src] ?? 0) + 1;
     const m = (l.created_at ?? '').slice(0, 7); // YYYY-MM
     if (m) months[m] = (months[m] ?? 0) + 1;
-    if (l.status === 'lost') {
+    // ცოცხალ ბაზაში „უარყოფითი" დახურვა not_interested/lost-ითაა
+    if (l.status === 'lost' || l.status === 'not_interested') {
       const r = l.loss_reason?.trim() || 'მიზეზი უცნობია';
       reasons[r] = (reasons[r] ?? 0) + 1;
     }
@@ -49,7 +50,10 @@ export async function fetchAnalytics(): Promise<AnalyticsData> {
 
   const total = leads.length;
   const won = byStatus.won;
-  const lost = byStatus.lost;
+  const lost =
+    ((byStatus as Record<string, number>).lost ?? 0) +
+    byStatus.not_interested +
+    byStatus.invalid;
 
   // ბოლო 6 თვე, ცარიელი თვეების ჩათვლით
   const monthly: { label: string; count: number }[] = [];

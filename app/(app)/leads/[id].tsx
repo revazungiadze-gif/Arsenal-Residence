@@ -116,7 +116,8 @@ export default function LeadDetail() {
 
   async function onStatusTap(status: LeadStatus) {
     if (!lead || status === lead.status) return;
-    if (status === 'lost') {
+    // „არ აინტერესებს" ახალი უარყოფითი დახურვაა — მიზეზს ვკითხულობთ
+    if (status === 'not_interested') {
       setLossReason('');
       setLossNote('');
       setLossModal(true);
@@ -282,7 +283,7 @@ export default function LeadDetail() {
 
   if (!lead) return <EmptyState text="ლიდი ვერ მოიძებნა" />;
 
-  const status = (lead.status as LeadStatus) ?? 'new';
+  const status = (lead.status as LeadStatus) ?? 'to_contact';
   const canAssign = role ? CAN_ASSIGN.includes(role) : false;
 
   return (
@@ -367,7 +368,7 @@ export default function LeadDetail() {
         />
         <Field label="ბინის კოდი" value={lead.apartment_code} />
         <Field label="შეხვედრა" value={fmt(lead.meeting_date)} />
-        {status === 'lost' ? (
+        {(status as string) === 'lost' || status === 'not_interested' ? (
           <Field
             label="დაკარგვის მიზეზი"
             value={
@@ -505,7 +506,9 @@ export default function LeadDetail() {
             <View style={{ gap: spacing.sm }}>
               <Button
                 title="დადასტურება"
-                onPress={() => applyStatus('lost', lossReason || 'other', lossNote)}
+                onPress={() =>
+                  applyStatus('not_interested', lossReason || 'other', lossNote)
+                }
                 loading={saving}
               />
               <Button

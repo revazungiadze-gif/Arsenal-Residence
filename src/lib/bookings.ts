@@ -6,6 +6,7 @@
  *   • უარყოფა: booking→rejected (მიზეზით), ბინა→available, შეტყობინება
  */
 import { supabase } from '@/lib/supabase';
+import { CLOSED_LEAD_STATUSES } from '@/types/crm';
 import type { Apartment, BookingRequest, Lead } from '@/types/crm';
 
 type Result = { error: string | null };
@@ -41,7 +42,7 @@ export async function fetchMyLeads(): Promise<Lead[]> {
     .order('created_at', { ascending: false })
     .limit(300);
   return ((data ?? []) as Lead[]).filter(
-    (l) => l.status !== 'won' && l.status !== 'lost'
+    (l) => !CLOSED_LEAD_STATUSES.includes(l.status)
   );
 }
 

@@ -47,38 +47,63 @@ export function dbRoleToAppRole(dbRole: string | null | undefined): AppRole {
   return (dbRole && map[dbRole]) || 'marketing';
 }
 
-// ── Lead pipeline სტატუსები (leads/route.ts-იდან) ───────────────────────
+// ── Lead pipeline სტატუსები — ცოცხალი (EU) ბაზის leads_status_check-ის
+// მიხედვით. ეს ის სტატუსებია, რომლებსაც ახალი ვები რეალურად იყენებს.
 export const LEAD_STATUSES = [
-  'new',
-  'contacted',
-  'qualified',
-  'proposal',
+  'to_contact',
+  'no_answer',
+  'contact_later',
+  'interested',
   'negotiation',
   'won',
-  'lost',
+  'not_interested',
+  'invalid',
 ] as const;
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
-export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+export const LEAD_STATUS_LABELS: Record<string, string> = {
+  to_contact: 'დასაკავშირებელი',
+  no_answer: 'არ უპასუხა',
+  contact_later: 'მოგვიანებით',
+  interested: 'დაინტერესებული',
+  negotiation: 'მოლაპარაკება',
+  won: 'მოგებული',
+  not_interested: 'არ აინტერესებს',
+  invalid: 'არავალიდური',
+  // ძველი (ბაზაში ჯერ კიდევ დაშვებული) სტატუსები — ჩვენებისთვის
   new: 'ახალი',
+  assigned: 'მინიჭებული',
   contacted: 'დაკავშირებული',
   qualified: 'კვალიფიცირებული',
   proposal: 'შეთავაზება',
-  negotiation: 'მოლაპარაკება',
-  won: 'მოგებული',
   lost: 'დაკარგული',
 };
 
-export const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
+export const LEAD_STATUS_COLORS: Record<string, string> = {
+  to_contact: '#3B82F6',
+  no_answer: '#F59E0B',
+  contact_later: '#8B5CF6',
+  interested: '#06B6D4',
+  negotiation: '#F97316',
+  won: '#22C55E',
+  not_interested: '#EF4444',
+  invalid: '#6B7280',
   new: '#3B82F6',
+  assigned: '#8B5CF6',
   contacted: '#8B5CF6',
   qualified: '#06B6D4',
   proposal: '#F59E0B',
-  negotiation: '#F97316',
-  won: '#22C55E',
   lost: '#EF4444',
 };
+
+/** „დახურული" სტატუსები — აქტიური სამუშაო სიებიდან გამოირიცხება */
+export const CLOSED_LEAD_STATUSES: readonly string[] = [
+  'won',
+  'lost',
+  'not_interested',
+  'invalid',
+];
 
 // ── პრიორიტეტი ──────────────────────────────────────────────────────────
 export const PRIORITY_LABELS: Record<string, string> = {
@@ -97,6 +122,7 @@ export const LEAD_SOURCES = [
   'referral',
   'walk_in',
   'chat',
+  'broker',
   'other',
 ] as const;
 
@@ -111,14 +137,17 @@ export const LEAD_SOURCE_LABELS: Record<string, string> = {
   investors_page: 'ინვესტორები',
   apartment_inquiry: 'ბინის მოთხოვნა',
   contact_form: 'საკონტაქტო ფორმა',
+  broker: 'ბროკერი',
   other: 'სხვა',
 };
 
 // ბაზის leads_loss_reason_check შეზღუდვის მნიშვნელობები
 export const LOSS_REASONS = [
   'price',
+  'payment_terms',
   'competitor',
   'product',
+  'location',
   'timing',
   'unreachable',
   'service',
@@ -127,8 +156,10 @@ export const LOSS_REASONS = [
 
 export const LOSS_REASON_LABELS: Record<string, string> = {
   price: 'ფასი',
+  payment_terms: 'გადახდის პირობები',
   competitor: 'კონკურენტი',
   product: 'პროდუქტი',
+  location: 'ლოკაცია',
   timing: 'დრო/ვადები',
   unreachable: 'ვერ დავუკავშირდით',
   service: 'მომსახურება',

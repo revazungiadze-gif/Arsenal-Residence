@@ -5,6 +5,7 @@
  * (გენერაციული Gemini-პასუხები ეტაპ 10-ში ჩაერთვება edge function-ით.)
  */
 import { supabase } from '@/lib/supabase';
+import { CLOSED_LEAD_STATUSES } from '@/types/crm';
 import type { Lead } from '@/types/crm';
 
 export interface CopilotLead {
@@ -28,6 +29,13 @@ export function analyzeLeadPriority(lead: Lead): number {
     new: 8,
     won: 0,
     lost: 0,
+    // ცოცხალი ბაზის ახალი სტატუსები — იგივე ლოგიკით
+    interested: 22,
+    contact_later: 14,
+    no_answer: 10,
+    to_contact: 8,
+    not_interested: 0,
+    invalid: 0,
   };
   score += stageScores[lead.status] ?? 0;
 
@@ -76,9 +84,15 @@ export function analyzeLeadPriority(lead: Lead): number {
 
 /** ვების buildNextAction-ის იდენტური ტექსტები */
 export function buildNextAction(lead: Lead, score: number): string {
-  if (lead.status === 'new') return 'პირველი კონტაქტი — დარეკეთ დღეს';
+  if (lead.status === 'new' || lead.status === 'to_contact')
+    return 'პირველი კონტაქტი — დარეკეთ დღეს';
+  if (lead.status === 'no_answer')
+    return 'ხელახლა დარეკეთ — წინა ზარზე არ უპასუხა';
+  if (lead.status === 'contact_later')
+    return 'შეთანხმებულ დროს დაუკავშირდით';
   if (lead.status === 'contacted') return 'გაუგზავნეთ ბინების ფოტო/პრეზენტაცია';
-  if (lead.status === 'qualified') return 'შეთავაზება მოამზადეთ და გაუგზავნეთ';
+  if (lead.status === 'qualified' || lead.status === 'interested')
+    return 'შეთავაზება მოამზადეთ და გაუგზავნეთ';
   if (lead.status === 'proposal') return 'შეთავაზებაზე პასუხი გამოითხოვეთ';
   if (lead.status === 'negotiation') {
     return score >= 70
@@ -99,7 +113,14 @@ export function buildFollowUp(lead: Lead): string {
   const name = lead.full_name.split(' ')[0];
   switch (lead.status) {
     case 'new':
+    case 'to_contact':
       return `გამარჯობა ${name}, არსენალი რეზიდენსიდან გწერთ — თქვენი განაცხადი მივიღეთ და სიამოვნებით გაგაცნობთ ჩვენს ბინებს. როდის იქნება მოხერხებული საუბარი?`;
+    case 'no_answer':
+      return `გამარჯობა ${name}, არსენალი რეზიდენსიდან გწერთ — ვერ დაგიკავშირდით. როდის იქნება მოხერხებული საუბარი?`;
+    case 'contact_later':
+      return `გამარჯობა ${name}, როგორც შევთანხმდით, გიკავშირდებით არსენალი რეზიდენსიდან. მოხერხებულია ახლა საუბარი?`;
+    case 'interested':
+      return `გამარჯობა ${name}, მოგიმზადეთ პერსონალური შეთავაზება არსენალი რეზიდენსის ბინაზე. როდის შეძლებთ განხილვას?`;
     case 'contacted':
       return `გამარჯობა ${name}, გიგზავნით ჩვენი ბინების შერჩევას თქვენი მოთხოვნების მიხედვით. ნებისმიერ კითხვაზე მზად ვართ გიპასუხოთ.`;
     case 'qualified':
@@ -125,7 +146,7 @@ export async function fetchCopilotLeads(limit = 20): Promise<CopilotLead[]> {
   if (error) console.warn('[copilot] query error:', error.message);
 
   const leads = ((data ?? []) as Lead[]).filter(
-    (l) => l.status !== 'won' && l.status !== 'lost'
+    (l) => !CLOSED_LEAD_STATUSES.includes(l.status)
   );
   return leads
     .map((lead) => {

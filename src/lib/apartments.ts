@@ -2,6 +2,7 @@
  * src/lib/apartments.ts — ბინები/ინვენტარი (ეტაპი 6).
  */
 import { supabase } from '@/lib/supabase';
+import { CLOSED_LEAD_STATUSES } from '@/types/crm';
 import type { Apartment, Lead } from '@/types/crm';
 
 export type ApartmentWithRefs = Apartment & {
@@ -60,7 +61,7 @@ export async function fetchActiveLeads(): Promise<Lead[]> {
     .order('created_at', { ascending: false })
     .limit(300);
   return ((data ?? []) as Lead[]).filter(
-    (l) => l.status !== 'won' && l.status !== 'lost'
+    (l) => !CLOSED_LEAD_STATUSES.includes(l.status)
   );
 }
 
