@@ -1,39 +1,39 @@
--- რომელი ცხრილიდან კითხულობს ახალი ვები ლიდებს?
--- ვეძებთ ვების სქრინშოტზე ჩანს ჩანაწერს (ტელეფონით) ყველა ცხრილში,
--- რომელსაც phone-ის მსგავსი სვეტი აქვს.
+-- გაუმჯობესებული ძებნა: ვების ლიდი (Elya Makeeva / 595208769) ამ ბაზაშია თუ არა
+-- 1) ტელეფონი ციფრების ნორმალიზებით (ფორმატი აღარ გვიშლის ხელს)
+-- 2) სახელით ძებნა leads-ში
+-- 3) leads ცხრილის სრული სვეტების სია (არქივის/ბაზის ველების აღმოსაჩენად)
+-- 4) ლიდების განაწილება მინიჭების მიხედვით
 
-create temp table diag(step text, info text);
-
-do $$
-declare
-  r record;
-  cnt bigint;
-begin
-  for r in
-    select c.table_name, c.column_name
-    from information_schema.columns c
-    join information_schema.tables t
-      on t.table_schema = c.table_schema and t.table_name = c.table_name
-    where c.table_schema = 'public'
-      and t.table_type = 'BASE TABLE'
-      and c.data_type in ('text','character varying')
-      and c.column_name in ('phone','phone_number','mobile','contact_phone')
-  loop
-    execute format(
-      'select count(*) from public.%I where %I like %L',
-      r.table_name, r.column_name, '%595208769%'
-    ) into cnt;
-    if cnt > 0 then
-      insert into diag values ('match » ' || r.table_name || '.' || r.column_name, cnt::text);
-    end if;
-  end loop;
-end $$;
-
--- ყველა ცხრილი ბოლო ცვლილების მასშტაბით (რომ ვნახოთ რა ცხრილები არსებობს)
-insert into diag
-select 'table', table_name
-from information_schema.tables
-where table_schema = 'public' and table_type = 'BASE TABLE'
-order by table_name;
-
-select step, info from diag order by step;
+select json_build_object(
+  'phone_in_leads', (
+    select coalesce(json_agg(json_build_object(
+      'name', full_name, 'phone', phone, 'status', status,
+      'assigned_to', assigned_to, 'created', created_at, 'updated', updated_at
+    )), '[]'::json)
+    from public.leads
+    where regexp_replace(coalesce(phone,''), '\D', '', 'g') like '%595208769%'
+  ),
+  'name_in_leads', (
+    select coalesce(json_agg(json_build_object(
+      'name', full_name, 'phone', phone, 'created', created_at
+    )), '[]'::json)
+    from public.leads
+    where full_name ilike '%makeeva%' or full_name ilike '%elya%'
+       or full_name ilike '%turmanauli%' or full_name ilike '%mushkudiani%'
+  ),
+  'leads_columns', (
+    select json_agg(column_name order by ordinal_position)
+    from information_schema.columns
+    where table_schema = 'public' and table_name = 'leads'
+  ),
+  'by_assignee', (
+    select json_agg(t) from (
+      select coalesce(p.full_name, 'მიუნიჭებელი') as agent,
+             count(*) as total,
+             count(*) filter (where l.status not in ('won','lost')) as active
+      from public.leads l
+      left join public.profiles p on p.id = l.assigned_to
+      group by 1 order by 2 desc
+    ) t
+  )
+) as result;
