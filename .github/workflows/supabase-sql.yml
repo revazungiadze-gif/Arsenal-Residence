@@ -14,6 +14,10 @@ on:
         description: 'გასაშვები SQL ფაილის გზა რეპოში'
         required: true
         default: 'supabase/pending.sql'
+      project_ref:
+        description: 'Supabase პროექტის ref (ცარიელი = ძველი/სატესტო)'
+        required: false
+        default: 'nulcaugqpzfvletqpiev'
 
 jobs:
   run-sql:
@@ -24,7 +28,7 @@ jobs:
       - name: Run SQL via Supabase Management API
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          PROJECT_REF: nulcaugqpzfvletqpiev
+          PROJECT_REF: ${{ github.event.inputs.project_ref || 'nulcaugqpzfvletqpiev' }}
           SQL_FILE: ${{ github.event.inputs.sql_file }}
         run: |
           set -e
